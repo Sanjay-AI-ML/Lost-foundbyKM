@@ -1,0 +1,45 @@
+{% load static %}
+<aside class="dashboard-sidebar">
+    <div class="sidebar-user-card">
+        <img src="{{ request.user.profile.avatar_url }}" alt="{{ request.user.username }}" class="sidebar-avatar">
+        <div class="sidebar-user-info">
+            <h4>{{ request.user.get_full_name|default:request.user.username }}</h4>
+            <span class="sidebar-user-role">Member</span>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="{% url 'items:dashboard' %}" class="sidebar-nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Overview</span>
+        </a>
+        <a href="{% url 'accounts:profile' %}" class="sidebar-nav-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+            <i class="fa-solid fa-user"></i>
+            <span>My Profile</span>
+        </a>
+        <a href="{% url 'items:add_lost_item' %}" class="sidebar-nav-link text-danger">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>Report Lost</span>
+        </a>
+        <a href="{% url 'items:add_found_item' %}" class="sidebar-nav-link text-success">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>Report Found</span>
+        </a>
+        <a href="{% url 'notifications:list' %}" class="sidebar-nav-link {% if request.resolver_match.app_name == 'notifications' %}active{% endif %}">
+            <i class="fa-solid fa-bell"></i>
+            <span>Notifications</span>
+            {% if unread_notifications_count > 0 %}
+                <span class="sidebar-badge">{{ unread_notifications_count }}</span>
+            {% endif %}
+        </a>
+        <a href="{% url 'accounts:edit_profile' %}" class="sidebar-nav-link {% if request.resolver_match.url_name == 'edit_profile' %}active{% endif %}">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Settings</span>
+        </a>
+        <hr class="sidebar-divider">
+        <a href="{% url 'accounts:logout' %}" class="sidebar-nav-link text-danger">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>Log Out</span>
+        </a>
+    </nav>
+</aside>

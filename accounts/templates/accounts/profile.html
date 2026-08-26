@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ profile_user.username }}'s Profile - Lost & Found Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/accounts.css' %}">
+<link rel="stylesheet" href="{% static 'items/css/items.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-header-card">
+        <div class="profile-avatar-wrapper">
+            <img src="{{ profile.avatar_url }}" alt="{{ profile_user.username }}" class="profile-avatar-img">
+        </div>
+        <div class="profile-details">
+            <div class="profile-title-row">
+                <h2>{{ profile_user.get_full_name|default:profile_user.username }}</h2>
+                {% if is_own_profile %}
+                    <div class="profile-actions">
+                        <a href="{% url 'accounts:edit_profile' %}" class="btn btn-outline btn-sm">
+                            <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+                        </a>
+                        <a href="{% url 'accounts:change_password' %}" class="btn btn-outline btn-sm">
+                            <i class="fa-solid fa-key"></i> Change Password
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            <p class="profile-username">@{{ profile_user.username }}</p>
+            
+            {% if profile.bio %}
+                <p class="profile-bio">{{ profile.bio }}</p>
+            {% endif %}
+
+            <div class="profile-meta-chips">
+                <span class="meta-chip"><i class="fa-solid fa-envelope"></i> {{ profile_user.email }}</span>
+                {% if profile.phone_number %}
+                    <span class="meta-chip"><i class="fa-solid fa-phone"></i> {{ profile.phone_number }}</span>
+                {% endif %}
+                {% if profile.location %}
+                    <span class="meta-chip"><i class="fa-solid fa-location-dot"></i> {{ profile.location }}</span>
+                {% endif %}
+                <span class="meta-chip"><i class="fa-regular fa-calendar"></i> Member since {{ profile_user.date_joined|date:"M Y" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Activity Tabs / Lists -->
+    <div class="profile-activity-section">
+        <div class="section-title-bar">
+            <h3><i class="fa-solid fa-box-archive"></i> Posted Items ({{ posted_items.count }})</h3>
+        </div>
+
+        {% if posted_items %}
+            <div class="items-grid">
+                {% for item in posted_items %}
+                    <div class="item-card">
+                        <div class="item-card-image-wrap">
+                            <img src="{{ item.image_url }}" alt="{{ item.title }}">
+                            <span class="badge badge-{{ item.item_type|lower }}">{{ item.get_item_type_display }}</span>
+                            <span class="badge badge-status-{{ item.status|lower }}">{{ item.get_status_display }}</span>
+                        </div>
+                        <div class="item-card-body">
+                            <span class="item-category-tag"><i class="fa-solid {{ item.category.icon|default:'fa-tag' }}"></i> {{ item.category.name }}</span>
+                            <h4><a href="{% url 'items:item_detail' item.pk %}">{{ item.title }}</a></h4>
+                            <p class="item-location"><i class="fa-solid fa-location-dot"></i> {{ item.location }}</p>
+                            <p class="item-date"><i class="fa-regular fa-clock"></i> {{ item.date_lost_or_found|date:"M d, Y" }}</p>
+                            
+                            <div class="item-card-footer">
+                                <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-sm btn-primary">View Details</a>
+                                {% if is_own_profile %}
+                                    <a href="{% url 'items:edit_item' item.pk %}" class="btn btn-sm btn-outline"><i class="fa-solid fa-edit"></i></a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state-card">
+                <i class="fa-regular fa-folder-open empty-icon"></i>
+                <p>No items posted yet.</p>
+                {% if is_own_profile %}
+                    <div class="empty-actions">
+                        <a href="{% url 'items:add_lost_item' %}" class="btn btn-primary btn-sm">Report Lost Item</a>
+                        <a href="{% url 'items:add_found_item' %}" class="btn btn-outline btn-sm">Report Found Item</a>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        {% if is_own_profile %}
+            <div class="section-title-bar mt-4">
+                <h3><i class="fa-solid fa-hand-holding-hand"></i> My Submitted Claims ({{ claims_made.count }})</h3>
+            </div>
+
+            {% if claims_made %}
+                <div class="claims-table-wrapper">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Category</th>
+                                <th>Submitted Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for claim in claims_made %}
+                                <tr>
+                                    <td><strong>{{ claim.item.title }}</strong></td>
+                                    <td>{{ claim.item.category.name }}</td>
+                                    <td>{{ claim.created_at|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="badge badge-claim-{{ claim.status|lower }}">{{ claim.get_status_display }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'claims:claim_status' claim.pk %}" class="btn btn-sm btn-outline">Check Status</a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state-card">
+                    <i class="fa-solid fa-shield-halved empty-icon"></i>
+                    <p>You have not filed any claims yet.</p>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

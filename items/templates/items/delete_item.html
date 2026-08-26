@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Confirm Delete - {{ item.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'items/css/items.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-card max-w-500 text-center">
+        <div class="delete-icon-badge">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h2>Delete Listing</h2>
+        <p class="text-muted">Are you sure you want to permanently delete this listing?</p>
+
+        <div class="delete-item-preview-card">
+            <img src="{{ item.image_url }}" alt="{{ item.title }}">
+            <div>
+                <h4>{{ item.title }}</h4>
+                <p><i class="fa-solid fa-location-dot"></i> {{ item.location }}</p>
+                <small class="text-muted">{{ item.date_lost_or_found|date:"M d, Y" }}</small>
+            </div>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-actions-center">
+                <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-danger">
+                    <i class="fa-solid fa-trash"></i> Yes, Delete Listing
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

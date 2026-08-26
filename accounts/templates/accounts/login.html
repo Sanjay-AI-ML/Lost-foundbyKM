@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign In - Lost & Found Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/accounts.css' %}?v=3.0">
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-icon-badge">
+                <i class="fa-solid fa-right-to-bracket"></i>
+            </div>
+            <h2>Welcome Back</h2>
+            <p>Log in to manage your lost or found items and claims.</p>
+        </div>
+
+        <form method="POST" class="auth-form" id="loginForm">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="id_username"><i class="fa-solid fa-user"></i> Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <span class="field-error">{{ form.username.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_password"><i class="fa-solid fa-lock"></i> Password</label>
+                <div class="password-input-wrapper">
+                    {{ form.password }}
+                    <button type="button" class="btn-toggle-password" id="togglePasswordBtn" title="Show/Hide Password" aria-label="Toggle password visibility">
+                        <i class="fa-solid fa-eye" id="togglePasswordIcon"></i>
+                    </button>
+                </div>
+                {% if form.password.errors %}
+                    <span class="field-error">{{ form.password.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <span>Sign In</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Don't have an account? <a href="{% url 'accounts:register' %}">Create one now</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'accounts/js/accounts.js' %}"></script>
+{% endblock %}

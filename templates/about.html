@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About Us - Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+    <div class="page-banner-content">
+        <h1>About Our Community Platform</h1>
+        <p>Bridging the gap between honest finders and anxious owners through structured, secure verification.</p>
+    </div>
+</div>
+
+<div class="container main-content-container" style="max-width: 960px;">
+    <div class="dashboard-card p-4 mb-4">
+        <h2 class="mb-3"><i class="fa-solid fa-bullseye text-primary"></i> Our Mission</h2>
+        <p class="lead">
+            Every day, thousands of essential belongings—smartphones, keys, wallets, laptops, pets, and cherished documents—are accidentally misplaced. Our mission is to provide an accessible, trustworthy digital lost-and-found hub that simplifies recovery and fosters neighborhood integrity.
+        </p>
+    </div>
+
+    <div class="dashboard-card p-4 mb-4" id="claims">
+        <h2 class="mb-3"><i class="fa-solid fa-hand-holding-hand text-success"></i> How Claims & Verification Work</h2>
+        <div class="detail-highlights-grid" style="grid-template-columns: 1fr;">
+            <div class="highlight-box">
+                <i class="fa-solid fa-1 text-primary"></i>
+                <div>
+                    <strong>1. Finding & Reporting</strong>
+                    <p class="text-muted">A finder posts the found object with a general description and photo, leaving out sensitive proof markers (like serial numbers or internal contents).</p>
+                </div>
+            </div>
+            <div class="highlight-box">
+                <i class="fa-solid fa-2 text-primary"></i>
+                <div>
+                    <strong>2. Ownership Claim Submission</strong>
+                    <p class="text-muted">The rightful owner submits a confidential claim providing proof of ownership (e.g., photo of receipt, IMEI number, exact contents description).</p>
+                </div>
+            </div>
+            <div class="highlight-box">
+                <i class="fa-solid fa-3 text-primary"></i>
+                <div>
+                    <strong>3. Finder Review & Safe Return</strong>
+                    <p class="text-muted">The finder reviews submitted claims and approves the true owner. Contact details and rendezvous instructions are safely exchanged.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-card p-4 mb-4" id="safety">
+        <h2 class="mb-3"><i class="fa-solid fa-shield-halved text-warning"></i> Safety Recommendations</h2>
+        <ul>
+            <li><strong>Public Meeting Places:</strong> Always meet in broad daylight at public locations (e.g. coffee shops, police station safe zones, campus security desks).</li>
+            <li><strong>Keep Confidential Data Safe:</strong> Never publish passwords, full national ID numbers, or bank card security codes in public listings.</li>
+            <li><strong>Verify Before Handover:</strong> Check claimant IDs and verify ownership answers before handing over valuable goods.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}500 - Server Error | Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card max-w-500 text-center">
+        <div class="header-icon-badge" style="background:#fee2e2; color:#ef4444; width:72px; height:72px; font-size:2.25rem;">
+            <i class="fa-solid fa-server"></i>
+        </div>
+        <h1 style="font-size:3rem; font-weight:800; color:#0f172a; margin:0.5rem 0;">500</h1>
+        <h2>Internal Server Error</h2>
+        <p class="text-muted">Something went wrong on our end. Please try again in a few moments or return to the homepage.</p>
+        
+        <div class="mt-4">
+            <a href="{% url 'items:home' %}" class="btn btn-primary">
+                <i class="fa-solid fa-house"></i> Return Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

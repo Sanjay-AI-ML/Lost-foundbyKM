@@ -1,0 +1,210 @@
+/* ==========================================================================
+   Framer Agents Floating Frosted Navbar - Lost & Found Portal
+   ========================================================================== */
+
+.app-header {
+    background: rgba(9, 10, 15, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.navbar-container {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0.9rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Brand Logo */
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+}
+
+.logo-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #00f2fe 0%, #00c6ff 35%, #0072ff 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    box-shadow: 0 0 25px rgba(0, 210, 255, 0.55), 0 0 40px rgba(0, 114, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    animation: cyberBadgeFloat 4s ease-in-out infinite;
+}
+
+.logo-text {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    display: flex;
+    align-items: center;
+}
+
+.logo-primary {
+    color: #ffffff;
+}
+
+.logo-accent {
+    color: #00d2ff;
+    margin: 0 0.15rem;
+    text-shadow: 0 0 12px rgba(0, 210, 255, 0.6);
+}
+
+/* Right Actions */
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.nav-icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    position: relative;
+    transition: all var(--transition-smooth);
+}
+
+.nav-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.notif-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--danger);
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--bg-dark);
+}
+
+/* User Dropdown */
+.user-menu-dropdown {
+    position: relative;
+}
+
+.user-avatar-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 0.35rem 0.85rem 0.35rem 0.35rem;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.user-avatar-trigger:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.nav-user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid var(--primary);
+}
+
+.nav-user-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.caret-icon {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.user-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 0.65rem);
+    right: 0;
+    width: 220px;
+    background: rgba(18, 21, 33, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+    padding: 0.5rem 0;
+    display: none;
+    flex-direction: column;
+    z-index: 1050;
+    animation: dropdownFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.user-dropdown-menu.show {
+    display: flex;
+}
+
+@keyframes dropdownFadeIn {
+    from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--border-subtle);
+    margin: 0.4rem 0;
+}
+
+.dropdown-item {
+    padding: 0.65rem 1.15rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+
+.dropdown-item.text-danger:hover {
+    background: rgba(244, 63, 94, 0.1);
+    color: var(--danger-text);
+}
+
+.auth-buttons-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}

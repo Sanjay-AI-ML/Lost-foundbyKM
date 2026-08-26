@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Profile - Lost & Found Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card max-w-600">
+        <div class="auth-header">
+            <div class="auth-icon-badge">
+                <i class="fa-solid fa-user-pen"></i>
+            </div>
+            <h2>Edit Profile</h2>
+            <p>Update your personal information and contact details.</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="auth-form" id="editProfileForm">
+            {% csrf_token %}
+
+            <div class="form-row">
+                <div class="form-group half">
+                    <label for="id_first_name">First Name</label>
+                    {{ u_form.first_name }}
+                    {% if u_form.first_name.errors %}<span class="field-error">{{ u_form.first_name.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="form-group half">
+                    <label for="id_last_name">Last Name</label>
+                    {{ u_form.last_name }}
+                    {% if u_form.last_name.errors %}<span class="field-error">{{ u_form.last_name.errors.0 }}</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="id_email">Email Address</label>
+                {{ u_form.email }}
+                {% if u_form.email.errors %}<span class="field-error">{{ u_form.email.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_avatar">Profile Picture</label>
+                {{ p_form.avatar }}
+                {% if p_form.avatar.errors %}<span class="field-error">{{ p_form.avatar.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_phone_number">Phone Number</label>
+                {{ p_form.phone_number }}
+                {% if p_form.phone_number.errors %}<span class="field-error">{{ p_form.phone_number.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_location">Location / City</label>
+                {{ p_form.location }}
+                {% if p_form.location.errors %}<span class="field-error">{{ p_form.location.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_bio">Bio</label>
+                {{ p_form.bio }}
+                {% if p_form.bio.errors %}<span class="field-error">{{ p_form.bio.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-actions-row">
+                <a href="{% url 'accounts:profile' %}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

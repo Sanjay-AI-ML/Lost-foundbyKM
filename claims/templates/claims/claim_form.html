@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Claim Ownership - {{ item.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'items/css/items.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<div class="form-container">
+    <div class="form-card">
+        <div class="form-header">
+            <div class="header-icon-badge" style="background:#e0e7ff; color:#4f46e5;">
+                <i class="fa-solid fa-hand-holding-hand"></i>
+            </div>
+            <h2>Verify Ownership & Claim Item</h2>
+            <p>You are submitting a claim for: <strong>{{ item.title }}</strong></p>
+        </div>
+
+        <div class="delete-item-preview-card mb-4">
+            <img src="{{ item.image_url }}" alt="{{ item.title }}">
+            <div>
+                <h4>{{ item.title }}</h4>
+                <p><i class="fa-solid fa-location-dot"></i> {{ item.location }}</p>
+                <small class="text-muted">Posted by {{ item.user.username }} on {{ item.created_at|date:"M d, Y" }}</small>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="item-submission-form">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="id_proof_details">Proof of Ownership Description <span class="required">*</span></label>
+                {{ form.proof_details }}
+                <small class="field-hint">
+                    Provide details only the true owner would know: e.g. serial number, lock screen image, scratch marks, exact contents, receipt number, color of case, etc.
+                </small>
+                {% if form.proof_details.errors %}<span class="field-error">{{ form.proof_details.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_proof_image">Upload Proof Image or Receipt (Optional)</label>
+                {{ form.proof_image }}
+                <small class="field-hint">e.g. Purchase invoice, picture of you with the item, warranty card.</small>
+                {% if form.proof_image.errors %}<span class="field-error">{{ form.proof_image.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_contact_info">Your Preferred Contact Info <span class="required">*</span></label>
+                {{ form.contact_info }}
+                <small class="field-hint">Phone number, WhatsApp, or email address so the finder can coordinate return.</small>
+                {% if form.contact_info.errors %}<span class="field-error">{{ form.contact_info.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-actions-bar">
+                <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Claim
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

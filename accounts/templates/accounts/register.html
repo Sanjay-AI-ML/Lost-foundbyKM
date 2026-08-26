@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Account - Lost & Found Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'accounts/css/accounts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-icon-badge">
+                <i class="fa-solid fa-user-plus"></i>
+            </div>
+            <h2>Create an Account</h2>
+            <p>Join the community to report items, track status, and verify claims.</p>
+        </div>
+
+        <form method="POST" class="auth-form" id="registerForm">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="form-row">
+                <div class="form-group half">
+                    <label for="id_first_name"><i class="fa-solid fa-signature"></i> First Name</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}<span class="field-error">{{ form.first_name.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="form-group half">
+                    <label for="id_last_name"><i class="fa-solid fa-signature"></i> Last Name</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}<span class="field-error">{{ form.last_name.errors.0 }}</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="id_username"><i class="fa-solid fa-user"></i> Username</label>
+                {{ form.username }}
+                {% if form.username.errors %}<span class="field-error">{{ form.username.errors.0 }}</span>{% endif %}
+                <small class="field-hint">Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.</small>
+            </div>
+
+            <div class="form-group">
+                <label for="id_email"><i class="fa-solid fa-envelope"></i> Email Address</label>
+                {{ form.email }}
+                {% if form.email.errors %}<span class="field-error">{{ form.email.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_password1"><i class="fa-solid fa-lock"></i> Password</label>
+                <div class="password-input-wrapper">
+                    {{ form.password1 }}
+                    <button type="button" class="btn-toggle-password" onclick="toggleFieldVisibility('id_password1', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                {% if form.password1.errors %}<span class="field-error">{{ form.password1.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_password2"><i class="fa-solid fa-shield-halved"></i> Confirm Password</label>
+                <div class="password-input-wrapper">
+                    {{ form.password2 }}
+                    <button type="button" class="btn-toggle-password" onclick="toggleFieldVisibility('id_password2', this)" title="Show/Hide Password" aria-label="Toggle password visibility">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                {% if form.password2.errors %}<span class="field-error">{{ form.password2.errors.0 }}</span>{% endif %}
+            </div>
+
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <span>Create Account</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{% url 'accounts:login' %}">Sign in here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'accounts/js/accounts.js' %}"></script>
+{% endblock %}

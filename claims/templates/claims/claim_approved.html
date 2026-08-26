@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Claim Approved - Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-card text-center">
+        <div class="header-icon-badge" style="background:#dcfce7; color:#10b981; width:68px; height:68px; font-size:2rem;">
+            <i class="fa-solid fa-handshake"></i>
+        </div>
+        <h2>Claim Approved!</h2>
+        <p class="text-muted">
+            The claim for "<strong>{{ claim.item.title }}</strong>" has been officially approved.
+        </p>
+
+        {% if claim.review_notes %}
+            <div class="alert alert-success text-left my-4">
+                <strong><i class="fa-solid fa-message"></i> Return Instructions / Notes:</strong>
+                <p class="mb-0 mt-1">{{ claim.review_notes }}</p>
+            </div>
+        {% endif %}
+
+        <div class="form-actions-center">
+            <a href="{% url 'claims:claim_status' claim.pk %}" class="btn btn-primary">
+                View Full Claim
+            </a>
+            <a href="{% url 'items:dashboard' %}" class="btn btn-outline">
+                Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

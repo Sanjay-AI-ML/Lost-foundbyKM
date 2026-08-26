@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Lost & Found Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'items/css/items.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<div class="container main-content-container">
+    <!-- Top Greeting & Action Header (Clean Cyber Glass Box) -->
+    <div class="portal-hero-banner cyber-welcome-card">
+        <div class="portal-hero-left">
+            <div class="user-greeting-badge">
+                <div class="greeting-avatar-orb">
+                    <span class="user-initial">{{ user.first_name|default:user.username|slice:":1"|upper }}</span>
+                    <span class="online-pulse-dot" title="Network Connected"></span>
+                </div>
+                <div class="user-greeting-meta">
+                    <h1 class="welcome-heading">
+                        Welcome, <span class="gradient-username">{{ user.first_name|default:user.username }}</span>!
+                    </h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="portal-hero-actions">
+            <a href="{% url 'items:add_lost_item' %}" class="btn-cyber-action btn-cyber-lost">
+                <div class="action-icon-wrap">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                </div>
+                <div class="action-text-wrap">
+                    <span class="action-title">Report Lost Item</span>
+                    <span class="action-desc">Post missing belongings</span>
+                </div>
+                <i class="fa-solid fa-arrow-right action-arrow"></i>
+            </a>
+
+            <a href="{% url 'items:add_found_item' %}" class="btn-cyber-action btn-cyber-found">
+                <div class="action-icon-wrap">
+                    <i class="fa-solid fa-hand-holding-heart"></i>
+                </div>
+                <div class="action-text-wrap">
+                    <span class="action-title">Report Found Item</span>
+                    <span class="action-desc">Help someone recover it</span>
+                </div>
+                <i class="fa-solid fa-arrow-right action-arrow"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="simple-search-card">
+        <form method="GET" action="{% url 'items:home' %}" class="simple-search-form" id="homeSearchForm">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" name="q" id="homeSearchInput" value="{{ search_query }}" placeholder="Search items by name, keywords, category, or location..." autocomplete="off">
+            {% if search_query %}
+                <a href="{% url 'items:home' %}" class="btn btn-outline btn-sm">Clear</a>
+            {% endif %}
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+    </div>
+
+    <!-- Section Switcher Tabs -->
+    <div class="section-switch-tabs">
+        <button type="button" class="tab-btn tab-lost {% if active_tab == 'lost' %}active{% endif %}" onclick="switchSection('lost')">
+            <div class="tab-btn-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+            <div class="tab-btn-content">
+                <span class="tab-title">Lost Section</span>
+                <span class="tab-subtitle" id="lostCountSubtitle">{{ lost_count }} Missing Item{{ lost_count|pluralize }}</span>
+            </div>
+        </button>
+
+        <button type="button" class="tab-btn tab-found {% if active_tab == 'found' %}active{% endif %}" onclick="switchSection('found')">
+            <div class="tab-btn-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
+            <div class="tab-btn-content">
+                <span class="tab-title">Found Section</span>
+                <span class="tab-subtitle" id="foundCountSubtitle">{{ found_count }} Discovered Item{{ found_count|pluralize }}</span>
+            </div>
+        </button>
+    </div>
+
+    <!-- ==================== 1. LOST SECTION ==================== -->
+    <div id="lostSectionArea" class="section-pane {% if active_tab == 'lost' %}active-pane{% endif %}">
+        <div class="section-pane-header">
+            <div>
+                <h2><i class="fa-solid fa-circle-exclamation text-danger"></i> Lost Items</h2>
+                <p>Items reported missing by community members.</p>
+            </div>
+            <a href="{% url 'items:add_lost_item' %}" class="btn btn-danger btn-sm">
+                <i class="fa-solid fa-plus"></i> Report Lost Item
+            </a>
+        </div>
+
+        <div class="items-grid" id="lostItemsGrid">
+            {% for item in lost_items %}
+                {% include 'items/_item_card.html' with item=item %}
+            {% empty %}
+                <div class="empty-state-card col-span-full">
+                    <i class="fa-solid fa-folder-open empty-icon"></i>
+                    <h3>No Lost Items Listed</h3>
+                    <p>{% if search_query %}No results matching "{{ search_query }}" in lost items.{% else %}There are currently no lost item reports.{% endif %}</p>
+                    <a href="{% url 'items:add_lost_item' %}" class="btn btn-danger btn-sm">Report a Lost Item</a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ==================== 2. FOUND SECTION ==================== -->
+    <div id="foundSectionArea" class="section-pane {% if active_tab == 'found' %}active-pane{% endif %}">
+        <div class="section-pane-header">
+            <div>
+                <h2><i class="fa-solid fa-hand-holding-heart text-success"></i> Found Items</h2>
+                <p>Items found by good samaritans waiting to be claimed.</p>
+            </div>
+            <a href="{% url 'items:add_found_item' %}" class="btn btn-success btn-sm">
+                <i class="fa-solid fa-plus"></i> Report Found Item
+            </a>
+        </div>
+
+        <div class="items-grid" id="foundItemsGrid">
+            {% for item in found_items %}
+                {% include 'items/_item_card.html' with item=item %}
+            {% empty %}
+                <div class="empty-state-card col-span-full">
+                    <i class="fa-solid fa-gift empty-icon"></i>
+                    <h3>No Found Items Listed</h3>
+                    <p>{% if search_query %}No results matching "{{ search_query }}" in found items.{% else %}There are currently no found items posted.{% endif %}</p>
+                    <a href="{% url 'items:add_found_item' %}" class="btn btn-success btn-sm">Post a Found Item</a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+function switchSection(tab) {
+    const lostPane = document.getElementById('lostSectionArea');
+    const foundPane = document.getElementById('foundSectionArea');
+    const lostBtn = document.querySelector('.tab-lost');
+    const foundBtn = document.querySelector('.tab-found');
+
+    if (tab === 'lost') {
+        lostPane.classList.add('active-pane');
+        foundPane.classList.remove('active-pane');
+        lostBtn.classList.add('active');
+        foundBtn.classList.remove('active');
+    } else {
+        foundPane.classList.add('active-pane');
+        lostPane.classList.remove('active-pane');
+        foundBtn.classList.add('active');
+        lostBtn.classList.remove('active');
+    }
+}
+
+// Live client-side instant filter as user types in search bar
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('homeSearchInput');
+    if (!searchInput) return;
+
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        if (query === '') return; // Let user browse normally or press enter
+
+        const lostCards = document.querySelectorAll('#lostItemsGrid .item-card');
+        const foundCards = document.querySelectorAll('#foundItemsGrid .item-card');
+
+        let lostVisible = 0;
+        let foundVisible = 0;
+
+        lostCards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            if (text.includes(query)) {
+                card.style.display = '';
+                lostVisible++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        foundCards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            if (text.includes(query)) {
+                card.style.display = '';
+                foundVisible++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Auto-switch tab if current tab has 0 matches but other has matches
+        const currentIsLost = document.getElementById('lostSectionArea').classList.contains('active-pane');
+        if (currentIsLost && lostVisible === 0 && foundVisible > 0) {
+            switchSection('found');
+        } else if (!currentIsLost && foundVisible === 0 && lostVisible > 0) {
+            switchSection('lost');
+        }
+    });
+});
+</script>
+{% endblock %}

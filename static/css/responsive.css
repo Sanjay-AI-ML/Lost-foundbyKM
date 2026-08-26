@@ -1,0 +1,63 @@
+/* responsive.css - Extra device adaptations and responsive polish */
+
+@media (max-width: 1024px) {
+    .hero-title {
+        font-size: 2.25rem;
+    }
+    .items-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 3rem 1rem 2.5rem;
+        margin: 1rem 0;
+        border-radius: 14px;
+    }
+    .hero-title {
+        font-size: 1.85rem;
+    }
+    .hero-subtitle {
+        font-size: 1rem;
+    }
+    .search-form-hero {
+        flex-direction: column;
+    }
+    .search-field-select {
+        border-left: none;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 0.5rem;
+    }
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    .stats-bar-section {
+        margin-top: 1rem;
+    }
+    .detail-main-image-wrap {
+        height: 280px;
+    }
+    .detail-title {
+        font-size: 1.65rem;
+    }
+    .detail-highlights-grid {
+        grid-template-columns: 1fr;
+    }
+    .form-card {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    .hero-cta-group .btn {
+        width: 100%;
+    }
+    .items-grid {
+        grid-template-columns: 1fr;
+    }
+}

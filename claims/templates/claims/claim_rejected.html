@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Claim Rejected - Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-card text-center">
+        <div class="header-icon-badge" style="background:#fee2e2; color:#ef4444; width:68px; height:68px; font-size:2rem;">
+            <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+        <h2>Claim Not Approved</h2>
+        <p class="text-muted">
+            The claim for "<strong>{{ claim.item.title }}</strong>" was declined by the poster.
+        </p>
+
+        {% if claim.review_notes %}
+            <div class="alert alert-danger text-left my-4">
+                <strong><i class="fa-solid fa-circle-info"></i> Reason / Note from Poster:</strong>
+                <p class="mb-0 mt-1">{{ claim.review_notes }}</p>
+            </div>
+        {% endif %}
+
+        <div class="form-actions-center">
+            <a href="{% url 'claims:claim_status' claim.pk %}" class="btn btn-outline">
+                View Claim Record
+            </a>
+            <a href="{% url 'items:home' %}" class="btn btn-primary">
+                Return to Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

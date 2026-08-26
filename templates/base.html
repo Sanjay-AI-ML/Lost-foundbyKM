@@ -1,0 +1,77 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Lost & Found Portal - Reconnecting People with Belongings{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Core Style Files -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=5.0">
+    <link rel="stylesheet" href="{% static 'css/navbar.css' %}?v=5.0">
+    <link rel="stylesheet" href="{% static 'css/footer.css' %}?v=5.0">
+    <link rel="stylesheet" href="{% static 'css/responsive.css' %}?v=5.0">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Ambient Motion Video Background (Full-Screen, Centered, Fixed Layer) -->
+    <div class="video-bg-container" id="videoBgContainer" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; overflow: hidden; z-index: -1; pointer-events: none;">
+        <video class="video-bg-media" id="bgVideo" autoplay muted loop playsinline preload="auto" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; pointer-events: none; opacity: 0.65; filter: saturate(1.2) brightness(0.85);">
+            <source src="{% static 'videos/background.mp4' %}" type="video/mp4">
+        </video>
+        <div class="video-bg-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 40%, rgba(9, 10, 15, 0.35) 0%, rgba(9, 10, 15, 0.75) 100%); pointer-events: none;"></div>
+    </div>
+
+    <div class="app-wrapper" style="position: relative; z-index: 10;">
+        <!-- Navigation Bar Component -->
+        {% include 'navbar.html' %}
+
+        <!-- Toast / Flash Messages Alert Container -->
+        {% if messages %}
+            <div class="toast-container" id="toastContainer">
+                {% for message in messages %}
+                    <div class="toast-alert toast-{{ message.tags|default:'info' }}">
+                        <div class="toast-icon">
+                            {% if message.tags == 'success' %}
+                                <i class="fa-solid fa-circle-check"></i>
+                            {% elif message.tags == 'error' or message.tags == 'danger' %}
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                            {% elif message.tags == 'warning' %}
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            {% else %}
+                                <i class="fa-solid fa-circle-info"></i>
+                            {% endif %}
+                        </div>
+                        <div class="toast-message">{{ message }}</div>
+                        <button type="button" class="toast-close" onclick="this.parentElement.remove();">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Main Page View Content -->
+        <main class="app-main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Footer Component -->
+        {% include 'footer.html' %}
+    </div>
+
+    <!-- Core Scripts -->
+    <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'js/search.js' %}"></script>
+    <script src="{% static 'js/validation.js' %}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

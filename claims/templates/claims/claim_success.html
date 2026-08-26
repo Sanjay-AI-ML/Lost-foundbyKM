@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Claim Submitted - Lost & Found Portal{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-card text-center">
+        <div class="header-icon-badge" style="background:#dcfce7; color:#10b981; width:68px; height:68px; font-size:2rem;">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h2>Claim Submitted Successfully!</h2>
+        <p class="text-muted">
+            Your claim for "<strong>{{ claim.item.title }}</strong>" has been submitted. The finder will review your proof of ownership.
+        </p>
+
+        <div class="delete-item-preview-card my-4 text-left">
+            <img src="{{ claim.item.image_url }}" alt="{{ claim.item.title }}">
+            <div>
+                <h4>{{ claim.item.title }}</h4>
+                <p>Status: <span class="badge badge-claim-pending">Pending Verification</span></p>
+                <small>Submitted on {{ claim.created_at|date:"M d, Y" }}</small>
+            </div>
+        </div>
+
+        <div class="form-actions-center">
+            <a href="{% url 'claims:claim_status' claim.pk %}" class="btn btn-primary">
+                View Claim Status
+            </a>
+            <a href="{% url 'items:dashboard' %}" class="btn btn-outline">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

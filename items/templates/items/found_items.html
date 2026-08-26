@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Found Items Catalog - Lost & Found Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'items/css/items.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-banner bg-found">
+    <div class="page-banner-content">
+        <span class="badge badge-found"><i class="fa-solid fa-hand-holding-heart"></i> Found Directory</span>
+        <h1>Found Items Directory</h1>
+        <p>Found something? Good samaritans post discovered items here to reunite them with their rightful owners.</p>
+        <a href="{% url 'items:add_found_item' %}" class="btn btn-success mt-3">
+            <i class="fa-solid fa-plus"></i> Post a Found Item
+        </a>
+    </div>
+</div>
+
+<div class="container main-content-container">
+    <div class="catalog-layout">
+        <!-- Sidebar filters -->
+        <aside class="catalog-filter-sidebar">
+            <div class="filter-card">
+                <h3><i class="fa-solid fa-filter"></i> Categories</h3>
+                <ul class="filter-category-list">
+                    <li><a href="{% url 'items:found_items' %}" class="active">All Categories</a></li>
+                    {% for cat in categories %}
+                        <li>
+                            <a href="{% url 'items:category_items' cat.slug %}?item_type=FOUND">
+                                <i class="fa-solid {{ cat.icon|default:'fa-tag' }}"></i> {{ cat.name }}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Items Grid -->
+        <div class="catalog-main-area">
+            <div class="catalog-header-bar">
+                <h3>Showing {{ page_obj.paginator.count }} Found Item{{ page_obj.paginator.count|pluralize }}</h3>
+            </div>
+
+            <div class="items-grid">
+                {% for item in page_obj %}
+                    {% include 'items/_item_card.html' with item=item %}
+                {% empty %}
+                    <div class="empty-state-card col-span-full">
+                        <i class="fa-solid fa-gift empty-icon"></i>
+                        <p>No found items currently listed.</p>
+                        <a href="{% url 'items:add_found_item' %}" class="btn btn-success btn-sm">Post Found Item</a>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <div class="pagination-wrapper">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" class="page-link">&laquo; Previous</a>
+                    {% endif %}
+                    <span class="page-current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="page-link">Next &raquo;</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Report Found Item - Lost & Found Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'items/css/items.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-card">
+        <div class="form-header header-found">
+            <div class="header-icon-badge badge-found-bg">
+                <i class="fa-solid fa-hand-holding-heart"></i>
+            </div>
+            <h2>Report a Found Item</h2>
+            <p>Thank you for being a responsible community member! Post the found item so the owner can identify and claim it.</p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="item-submission-form" id="foundItemForm">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="id_title"><i class="fa-solid fa-tag text-success"></i> Item Title / Name <span class="required">*</span></label>
+                {{ form.title }}
+                {% if form.title.errors %}<span class="field-error">{{ form.title.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_category"><i class="fa-solid fa-layer-group text-success"></i> Category <span class="required">*</span></label>
+                    {{ form.category }}
+                    {% if form.category.errors %}<span class="field-error">{{ form.category.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="id_date_lost_or_found"><i class="fa-regular fa-calendar-days text-success"></i> Date Found <span class="required">*</span></label>
+                    {{ form.date_lost_or_found }}
+                    {% if form.date_lost_or_found.errors %}<span class="field-error">{{ form.date_lost_or_found.errors.0 }}</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="id_location"><i class="fa-solid fa-location-dot text-success"></i> Location Where Found <span class="required">*</span></label>
+                {{ form.location }}
+                <small class="field-hint">e.g. Park bench on West End Park, Coffee Shop table, Bus 42 seat 12</small>
+                {% if form.location.errors %}<span class="field-error">{{ form.location.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_image"><i class="fa-solid fa-camera text-success"></i> Upload Photo of Found Item (Optional)</label>
+                {{ form.image }}
+                <small class="field-hint">Upload a clear photo to help the owner recognize it.</small>
+                {% if form.image.errors %}<span class="field-error">{{ form.image.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_description"><i class="fa-solid fa-align-left text-success"></i> Description <span class="required">*</span></label>
+                {{ form.description }}
+                <small class="field-hint">Tip: Don't give away every secret identifier so claimants can prove ownership.</small>
+                {% if form.description.errors %}<span class="field-error">{{ form.description.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_contact_phone"><i class="fa-solid fa-phone text-success"></i> Your Contact Phone (Optional)</label>
+                    {{ form.contact_phone }}
+                    {% if form.contact_phone.errors %}<span class="field-error">{{ form.contact_phone.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="id_contact_email"><i class="fa-solid fa-envelope text-success"></i> Your Contact Email (Optional)</label>
+                    {{ form.contact_email }}
+                    {% if form.contact_email.errors %}<span class="field-error">{{ form.contact_email.errors.0 }}</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-actions-bar">
+                <a href="{% url 'items:home' %}?tab=found" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="fa-solid fa-paper-plane"></i> Publish Found Item Post
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'items/js/items.js' %}"></script>
+{% endblock %}

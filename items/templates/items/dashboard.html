@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Lost & Found Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'items/css/items.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    <!-- Sidebar Navigation Component -->
+    {% include 'sidebar.html' %}
+
+    <main class="dashboard-main-content">
+        <div class="dashboard-header-bar">
+            <div>
+                <h2>Welcome back, {{ request.user.first_name|default:request.user.username }}!</h2>
+                <p>Manage your posted items, track claim applications, and respond to inquiries.</p>
+            </div>
+            <div class="dashboard-quick-actions">
+                <a href="{% url 'items:add_lost_item' %}" class="btn btn-danger btn-sm">
+                    <i class="fa-solid fa-plus"></i> Report Lost
+                </a>
+                <a href="{% url 'items:add_found_item' %}" class="btn btn-success btn-sm">
+                    <i class="fa-solid fa-plus"></i> Report Found
+                </a>
+            </div>
+        </div>
+
+        <!-- Metric Stat Cards -->
+        <div class="dashboard-metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="metric-details">
+                    <h4>{{ user_lost_count }}</h4>
+                    <p>My Lost Reports</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon green"><i class="fa-solid fa-hand-holding-heart"></i></div>
+                <div class="metric-details">
+                    <h4>{{ user_found_count }}</h4>
+                    <p>My Found Reports</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon purple"><i class="fa-solid fa-inbox"></i></div>
+                <div class="metric-details">
+                    <h4>{{ pending_claims_count }}</h4>
+                    <p>Pending Claims To Review</p>
+                </div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-icon blue"><i class="fa-solid fa-paper-plane"></i></div>
+                <div class="metric-details">
+                    <h4>{{ my_claims.count }}</h4>
+                    <p>Claims I've Filed</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Received Claims Needing Review -->
+        <div class="dashboard-card mb-4">
+            <div class="dashboard-card-header">
+                <h3><i class="fa-solid fa-bell"></i> Claims on Your Listings</h3>
+            </div>
+            <div class="dashboard-card-body">
+                {% if received_claims %}
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Claimant</th>
+                                    <th>Proof Summary</th>
+                                    <th>Submitted</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for claim in received_claims %}
+                                    <tr>
+                                        <td><strong>{{ claim.item.title }}</strong></td>
+                                        <td>
+                                            <div class="user-chip">
+                                                <img src="{{ claim.claimant.profile.avatar_url }}" class="user-chip-avatar" alt="">
+                                                <span>{{ claim.claimant.username }}</span>
+                                            </div>
+                                        </td>
+                                        <td>{{ claim.proof_details|truncatewords:10 }}</td>
+                                        <td>{{ claim.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            <span class="badge badge-claim-{{ claim.status|lower }}">{{ claim.get_status_display }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'claims:claim_status' claim.pk %}" class="btn btn-sm btn-outline">Review Claim</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted p-3">No claims received yet on your listings.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- My Posted Listings Table -->
+        <div class="dashboard-card">
+            <div class="dashboard-card-header">
+                <h3><i class="fa-solid fa-list-check"></i> My Listings</h3>
+            </div>
+            <div class="dashboard-card-body">
+                {% if user_items %}
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Thumbnail</th>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Category</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in user_items %}
+                                    <tr>
+                                        <td>
+                                            <img src="{{ item.image_url }}" class="table-thumb" alt="{{ item.title }}">
+                                        </td>
+                                        <td>
+                                            <strong><a href="{% url 'items:item_detail' item.pk %}">{{ item.title }}</a></strong>
+                                            <div class="small text-muted">{{ item.location }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ item.item_type|lower }}">{{ item.get_item_type_display }}</span>
+                                        </td>
+                                        <td>{{ item.category.name|default:"General" }}</td>
+                                        <td>{{ item.date_lost_or_found|date:"M d, Y" }}</td>
+                                        <td>
+                                            <span class="badge badge-status-{{ item.status|lower }}">{{ item.get_status_display }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons-group">
+                                                <a href="{% url 'items:item_detail' item.pk %}" class="btn-action view" title="View"><i class="fa-solid fa-eye"></i></a>
+                                                <a href="{% url 'items:edit_item' item.pk %}" class="btn-action edit" title="Edit"><i class="fa-solid fa-pen"></i></a>
+                                                <a href="{% url 'items:delete_item' item.pk %}" class="btn-action delete" title="Delete"><i class="fa-solid fa-trash"></i></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state-card">
+                        <i class="fa-solid fa-folder-plus empty-icon"></i>
+                        <p>You haven't posted any items yet.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

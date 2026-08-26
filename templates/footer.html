@@ -1,0 +1,65 @@
+{% load static %}
+<footer class="app-footer">
+    <div class="footer-container">
+        <div class="footer-grid">
+            <div class="footer-brand-col">
+                <div class="brand-logo mb-2">
+                    <div class="logo-icon-wrapper">
+                        <i class="fa-solid fa-compass"></i>
+                    </div>
+                    <div class="logo-text">
+                        <span class="logo-primary text-white">Lost</span><span class="logo-accent">&</span><span class="logo-primary text-white">Found</span>
+                    </div>
+                </div>
+                <p class="footer-desc">
+                    A community portal dedicated to helping people recover lost property through verified ownership matching and seamless claims.
+                </p>
+                <div class="footer-social-links">
+                    <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+                </div>
+            </div>
+
+            <div class="footer-links-col">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="{% url 'items:home' %}">Home</a></li>
+                    <li><a href="{% url 'items:lost_items' %}">Lost Directory</a></li>
+                    <li><a href="{% url 'items:found_items' %}">Found Directory</a></li>
+                    <li><a href="{% url 'about' %}">About Platform</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links-col">
+                <h4>Categories</h4>
+                <ul>
+                    <li><a href="{% url 'items:category_items' 'electronics' %}">Electronics</a></li>
+                    <li><a href="{% url 'items:category_items' 'documents-wallets' %}">Wallets & Docs</a></li>
+                    <li><a href="{% url 'items:category_items' 'keys' %}">Keys & Badges</a></li>
+                    <li><a href="{% url 'items:category_items' 'bags-backpacks' %}">Bags & Luggage</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links-col">
+                <h4>Safety & Help</h4>
+                <ul>
+                    <li><a href="{% url 'about' %}#safety">Safety Guidelines</a></li>
+                    <li><a href="{% url 'about' %}#claims">How Claims Work</a></li>
+                    <li><a href="{% url 'about' %}#faq">Frequently Asked Questions</a></li>
+                    <li><a href="mailto:support@lostandfound.local">Support Contact</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom-row">
+            <p>&copy; {% now "Y" %} Lost & Found Community Project. All rights reserved.</p>
+            <div class="footer-bottom-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">Security</a>
+            </div>
+        </div>
+    </div>
+</footer>

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Search Results - Lost & Found Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'items/css/items.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-banner bg-search">
+    <div class="page-banner-content">
+        <h1>Search Listings</h1>
+        <p>Found {{ total_results }} result{{ total_results|pluralize }} {% if query %}for "<strong>{{ query }}</strong>"{% endif %}</p>
+
+        <!-- Inline Search Refinement -->
+        <div class="hero-search-box mt-3">
+            <form action="{% url 'items:search_results' %}" method="GET" class="search-form-hero">
+                <div class="search-field-input">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" name="q" value="{{ query }}" placeholder="Search items or location...">
+                </div>
+                <div class="search-field-select">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <select name="category">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if category_id|stringformat:"s" == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="search-field-select">
+                    <i class="fa-solid fa-filter"></i>
+                    <select name="item_type">
+                        <option value="">All Types</option>
+                        <option value="LOST" {% if item_type == 'LOST' %}selected{% endif %}>Lost</option>
+                        <option value="FOUND" {% if item_type == 'FOUND' %}selected{% endif %}>Found</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary search-btn">Filter</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="container main-content-container">
+    <div class="items-grid">
+        {% for item in page_obj %}
+            {% include 'items/_item_card.html' with item=item %}
+        {% empty %}
+            <div class="empty-state-card col-span-full">
+                <i class="fa-solid fa-magnifying-glass empty-icon"></i>
+                <h3>No Matching Listings Found</h3>
+                <p>Try refining your search terms or view our all lost/found directories.</p>
+                <div class="mt-3">
+                    <a href="{% url 'items:lost_items' %}" class="btn btn-primary btn-sm">Browse Lost Items</a>
+                    <a href="{% url 'items:found_items' %}" class="btn btn-outline btn-sm">Browse Found Items</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+        <div class="pagination-wrapper">
+            {% if page_obj.has_previous %}
+                <a href="?q={{ query }}&category={{ category_id }}&item_type={{ item_type }}&page={{ page_obj.previous_page_number }}" class="page-link">&laquo; Previous</a>
+            {% endif %}
+            <span class="page-current">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            {% if page_obj.has_next %}
+                <a href="?q={{ query }}&category={{ category_id }}&item_type={{ item_type }}&page={{ page_obj.next_page_number }}" class="page-link">Next &raquo;</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

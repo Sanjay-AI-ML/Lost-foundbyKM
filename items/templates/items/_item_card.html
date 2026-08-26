@@ -1,0 +1,40 @@
+{% load static %}
+<div class="item-card">
+    <div class="item-card-image-wrap">
+        <img src="{{ item.image_url }}" alt="{{ item.title }}" loading="lazy">
+        <span class="badge badge-{{ item.item_type|lower }}">{{ item.get_item_type_display }}</span>
+        {% if item.status != 'OPEN' %}
+            <span class="badge badge-status-{{ item.status|lower }}">{{ item.get_status_display }}</span>
+        {% endif %}
+    </div>
+    <div class="item-card-body">
+        <div class="item-card-meta-top">
+            {% if item.category %}
+                <span class="item-category-tag">
+                    <i class="fa-solid {{ item.category.icon|default:'fa-tag' }}"></i> {{ item.category.name }}
+                </span>
+            {% endif %}
+        </div>
+        
+        <h3 class="item-card-title">
+            <a href="{% url 'items:item_detail' item.pk %}">{{ item.title }}</a>
+        </h3>
+
+        <p class="item-card-description">{{ item.description|truncatewords:14 }}</p>
+
+        <div class="item-card-info-list">
+            <div class="info-row"><i class="fa-solid fa-location-dot"></i> <span>{{ item.location }}</span></div>
+            <div class="info-row"><i class="fa-regular fa-calendar"></i> <span>{{ item.date_lost_or_found|date:"M d, Y" }}</span></div>
+        </div>
+
+        <div class="item-card-footer">
+            <div class="user-chip">
+                <img src="{{ item.user.profile.avatar_url }}" alt="{{ item.user.username }}" class="user-chip-avatar">
+                <span>{{ item.user.username }}</span>
+            </div>
+            <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-sm btn-primary">
+                Details <i class="fa-solid fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</div>

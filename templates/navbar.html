@@ -1,0 +1,57 @@
+{% load static %}
+<header class="app-header">
+    <div class="navbar-container">
+        <!-- Brand Logo -->
+        <a href="{% url 'items:home' %}" class="brand-logo">
+            <div class="logo-icon-wrapper">
+                <i class="fa-solid fa-compass"></i>
+            </div>
+            <div class="logo-text">
+                <span class="logo-primary">Lost</span><span class="logo-accent">&</span><span class="logo-primary">Found</span>
+            </div>
+        </a>
+
+        <!-- Right Side Nav Actions (Minimal & Clean) -->
+        <div class="navbar-actions">
+            {% if user.is_authenticated %}
+                <!-- Notifications Icon -->
+                <a href="{% url 'notifications:list' %}" class="nav-icon-btn" title="Notifications">
+                    <i class="fa-solid fa-bell"></i>
+                    {% if unread_notifications_count > 0 %}
+                        <span class="notif-badge">{{ unread_notifications_count }}</span>
+                    {% endif %}
+                </a>
+
+                <!-- User Dropdown Menu -->
+                <div class="user-menu-dropdown" id="userMenuDropdown">
+                    <button class="user-avatar-trigger" id="userMenuBtn" type="button">
+                        <img src="{{ user.profile.avatar_url }}" alt="{{ user.username }}" class="nav-user-avatar">
+                        <span class="nav-user-name">{{ user.first_name|default:user.username }}</span>
+                        <i class="fa-solid fa-chevron-down caret-icon"></i>
+                    </button>
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        <a href="{% url 'items:dashboard' %}" class="dropdown-item">
+                            <i class="fa-solid fa-chart-pie"></i> My Dashboard
+                        </a>
+                        <a href="{% url 'accounts:profile' %}" class="dropdown-item">
+                            <i class="fa-solid fa-user"></i> My Profile
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="{% url 'accounts:logout' %}" class="dropdown-item text-danger">
+                            <i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="auth-buttons-nav">
+                    <a href="{% url 'accounts:login' %}" class="btn btn-outline btn-sm">
+                        <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                    </a>
+                    <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">
+                        <i class="fa-solid fa-user-plus"></i> Register
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</header>

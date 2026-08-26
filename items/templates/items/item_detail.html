@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ item.title }} - Lost & Found Portal{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'items/css/items.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container main-content-container">
+    <!-- Breadcrumb -->
+    <nav class="breadcrumb-nav">
+        <a href="{% url 'items:home' %}"><i class="fa-solid fa-house"></i> Home</a>
+        <i class="fa-solid fa-chevron-right separator"></i>
+        {% if item.item_type == 'LOST' %}
+            <a href="{% url 'items:lost_items' %}">Lost Items</a>
+        {% else %}
+            <a href="{% url 'items:found_items' %}">Found Items</a>
+        {% endif %}
+        <i class="fa-solid fa-chevron-right separator"></i>
+        <span>{{ item.title|truncatechars:35 }}</span>
+    </nav>
+
+    <div class="item-detail-layout">
+        <!-- Left: Image Box -->
+        <div class="detail-gallery-card">
+            <div class="detail-main-image-wrap">
+                <img src="{{ item.image_url }}" alt="{{ item.title }}" id="mainDetailImage">
+                <span class="badge badge-{{ item.item_type|lower }} floating-type-badge">
+                    {{ item.get_item_type_display }}
+                </span>
+                <span class="badge badge-status-{{ item.status|lower }} floating-status-badge">
+                    {{ item.get_status_display }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Right: Information Box -->
+        <div class="detail-info-card">
+            <div class="detail-header">
+                {% if item.category %}
+                    <span class="item-category-tag">
+                        <i class="fa-solid {{ item.category.icon|default:'fa-tag' }}"></i> {{ item.category.name }}
+                    </span>
+                {% endif %}
+                <h1 class="detail-title">{{ item.title }}</h1>
+                <div class="detail-posted-by">
+                    <img src="{{ item.user.profile.avatar_url }}" alt="{{ item.user.username }}" class="user-chip-avatar">
+                    <span>Reported by <a href="{% url 'accounts:user_profile' item.user.username %}"><strong>{{ item.user.username }}</strong></a> on {{ item.created_at|date:"M d, Y" }}</span>
+                </div>
+            </div>
+
+            <div class="detail-highlights-grid">
+                <div class="highlight-box">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <div>
+                        <small>Location</small>
+                        <p>{{ item.location }}</p>
+                    </div>
+                </div>
+                <div class="highlight-box">
+                    <i class="fa-regular fa-calendar-days"></i>
+                    <div>
+                        <small>Date {{ item.get_item_type_display }}</small>
+                        <p>{{ item.date_lost_or_found|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+                {% if item.contact_phone %}
+                    <div class="highlight-box">
+                        <i class="fa-solid fa-phone"></i>
+                        <div>
+                            <small>Contact Phone</small>
+                            <p>{{ item.contact_phone }}</p>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if item.contact_email %}
+                    <div class="highlight-box">
+                        <i class="fa-solid fa-envelope"></i>
+                        <div>
+                            <small>Contact Email</small>
+                            <p>{{ item.contact_email }}</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="detail-description-section">
+                <h3><i class="fa-solid fa-align-left"></i> Description & Details</h3>
+                <p>{{ item.description|linebreaks }}</p>
+            </div>
+
+            <!-- Action Area -->
+            <div class="detail-action-footer">
+                {% if is_owner %}
+                    <div class="owner-controls">
+                        <span class="owner-badge"><i class="fa-solid fa-shield"></i> You are the owner of this post</span>
+                        <div class="btn-group">
+                            <a href="{% url 'items:edit_item' item.pk %}" class="btn btn-primary">
+                                <i class="fa-solid fa-pen"></i> Edit Listing
+                            </a>
+                            <a href="{% url 'items:delete_item' item.pk %}" class="btn btn-danger">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </a>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="claim-controls">
+                        {% if user_has_claimed %}
+                            <div class="alert alert-info">
+                                <i class="fa-solid fa-circle-check"></i> You have already filed a claim for this item.
+                                <a href="{% url 'claims:claim_status' existing_claim.pk %}" class="alert-link">View Claim Status ({{ existing_claim.get_status_display }})</a>
+                            </div>
+                        {% else %}
+                            {% if item.item_type == 'FOUND' %}
+                                <a href="{% url 'claims:submit_claim' item.pk %}" class="btn btn-success btn-lg btn-block">
+                                    <i class="fa-solid fa-hand-holding-hand"></i> Claim This Item (Verify Ownership)
+                                </a>
+                            {% else %}
+                                <a href="{% url 'claims:submit_claim' item.pk %}" class="btn btn-primary btn-lg btn-block">
+                                    <i class="fa-solid fa-comment-dots"></i> I Have Found This Item
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Owner's Claim Review List (Visible only to owner) -->
+    {% if is_owner and item_claims %}
+        <div class="item-claims-review-section mt-5">
+            <div class="section-title-bar">
+                <h3><i class="fa-solid fa-clipboard-check"></i> Claims Received for this Item ({{ item_claims.count }})</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Claimant</th>
+                            <th>Proof Details</th>
+                            <th>Proof Image</th>
+                            <th>Contact</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for claim in item_claims %}
+                            <tr>
+                                <td>
+                                    <div class="user-chip">
+                                        <img src="{{ claim.claimant.profile.avatar_url }}" class="user-chip-avatar" alt="">
+                                        <span>{{ claim.claimant.username }}</span>
+                                    </div>
+                                </td>
+                                <td>{{ claim.proof_details|truncatewords:15 }}</td>
+                                <td>
+                                    {% if claim.proof_image %}
+                                        <a href="{{ claim.proof_image.url }}" target="_blank" class="btn btn-sm btn-outline">View Photo</a>
+                                    {% else %}
+                                        <span class="text-muted">None</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ claim.contact_info|default:"N/A" }}</td>
+                                <td>{{ claim.created_at|date:"M d, Y" }}</td>
+                                <td><span class="badge badge-claim-{{ claim.status|lower }}">{{ claim.get_status_display }}</span></td>
+                                <td>
+                                    <a href="{% url 'claims:claim_status' claim.pk %}" class="btn btn-sm btn-primary">Review / Decide</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Related Items -->
+    {% if related_items %}
+        <div class="related-items-section mt-5">
+            <div class="section-title-bar">
+                <h3><i class="fa-solid fa-shapes"></i> Similar Listings in {{ item.category.name }}</h3>
+            </div>
+            <div class="items-grid">
+                {% for rel_item in related_items %}
+                    {% include 'items/_item_card.html' with item=rel_item %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

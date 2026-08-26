@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Listing - {{ item.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'items/css/items.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-card">
+        <div class="form-header">
+            <div class="header-icon-badge" style="background:#e0e7ff; color:#4f46e5;">
+                <i class="fa-solid fa-pen-to-square"></i>
+            </div>
+            <h2>Edit Listing</h2>
+            <p>Update information for: <strong>{{ item.title }}</strong></p>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" class="item-submission-form">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <p><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="id_title">Item Title / Name <span class="required">*</span></label>
+                {{ form.title }}
+                {% if form.title.errors %}<span class="field-error">{{ form.title.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_category">Category <span class="required">*</span></label>
+                    {{ form.category }}
+                    {% if form.category.errors %}<span class="field-error">{{ form.category.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="id_item_type">Listing Type <span class="required">*</span></label>
+                    {{ form.item_type }}
+                    {% if form.item_type.errors %}<span class="field-error">{{ form.item_type.errors.0 }}</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_location">Location <span class="required">*</span></label>
+                    {{ form.location }}
+                    {% if form.location.errors %}<span class="field-error">{{ form.location.errors.0 }}</span>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label for="id_date_lost_or_found">Date <span class="required">*</span></label>
+                    {{ form.date_lost_or_found }}
+                    {% if form.date_lost_or_found.errors %}<span class="field-error">{{ form.date_lost_or_found.errors.0 }}</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="id_image">Replace Photo (Optional)</label>
+                {{ form.image }}
+                {% if item.image %}
+                    <small class="field-hint">Current photo: <a href="{{ item.image.url }}" target="_blank">{{ item.image.name }}</a></small>
+                {% endif %}
+                {% if form.image.errors %}<span class="field-error">{{ form.image.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_description">Detailed Description <span class="required">*</span></label>
+                {{ form.description }}
+                {% if form.description.errors %}<span class="field-error">{{ form.description.errors.0 }}</span>{% endif %}
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="id_contact_phone">Contact Phone Number (Optional)</label>
+                    {{ form.contact_phone }}
+                </div>
+                <div class="form-group">
+                    <label for="id_contact_email">Contact Email (Optional)</label>
+                    {{ form.contact_email }}
+                </div>
+            </div>
+
+            <div class="form-actions-bar">
+                <a href="{% url 'items:item_detail' item.pk %}" class="btn btn-outline">Cancel</a>
+                <button type="submit" class="btn btn-primary btn-lg">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'items/js/items.js' %}"></script>
+{% endblock %}
