@@ -17,7 +17,7 @@ logger = logging.getLogger("cyberaccess")
 # Configuration (from Django settings, env-overridable)
 CYBERACCESS_ENABLED = getattr(settings, "CYBERACCESS_ENABLED", True)
 CYBERACCESS_API_URL = getattr(settings, "CYBERACCESS_API_URL", "http://127.0.0.1:8000")
-CYBERACCESS_API_KEY = getattr(settings, "CYBERACCESS_API_KEY", None)
+CYBERACCESS_API_KEY = getattr(settings, "CYBERACCESS_API_KEY", None) or "dev_test_key"
 CYBERACCESS_FAIL_OPEN = getattr(settings, "CYBERACCESS_FAIL_OPEN", True)
 CYBERACCESS_TIMEOUT = getattr(settings, "CYBERACCESS_TIMEOUT", 2.0)
 CYBERACCESS_CANARIES = getattr(settings, "CYBERACCESS_CANARIES", ["0", "999999", "canary_admin_vault"])
@@ -154,6 +154,23 @@ class CyberAccessClient:
         }
 
 
+def get_client_ip(request: HttpRequest) -> str:
+    """Extracts only the client IP address (no usernames).
+    Used for anonymous/scanner-based access attempts (e.g., 404 probes).
+    """
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "").strip()
+    if x_forwarded_for:
+        client_ip = x_forwarded_for.split(",")[0].strip()
+        if client_ip and len(client_ip) <= 45:  # Max IPv6 length
+            return client_ip
+
+    remote_addr = request.META.get("REMOTE_ADDR", "").strip()
+    if remote_addr and len(remote_addr) <= 45:
+        return remote_addr
+
+    return "0.0.0.0"
+
+
 def get_client_subject(request: HttpRequest) -> str:
     """Extracts a reliable subject identity from the request (username or remote IP).
 
@@ -168,20 +185,7 @@ def get_client_subject(request: HttpRequest) -> str:
         return str(request.user.username)
 
     # Fallback to client IP (X-Forwarded-For for proxied requests)
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "").strip()
-    if x_forwarded_for:
-        # Take first IP and validate format (basic check)
-        client_ip = x_forwarded_for.split(",")[0].strip()
-        if client_ip and len(client_ip) <= 45:  # Max IPv6 length
-            return client_ip
-
-    # Direct connection IP
-    remote_addr = request.META.get("REMOTE_ADDR", "").strip()
-    if remote_addr and len(remote_addr) <= 45:
-        return remote_addr
-
-    # Last resort: unknown subject (still identifiable for tracking)
-    return "unknown_subject"
+    return get_client_ip(request)
 
 
 def enforce_bola(
@@ -190,12 +194,14 @@ def enforce_bola(
     is_authorized: bool,
     resource_name: str = "resource",
     http_verb: Optional[str] = None,
+    subject: Optional[str] = None,
 ) -> Tuple[bool, Optional[str], dict]:
     """
     Primary BOLA Gatekeeper for Django views.
     Returns: (is_allowed: bool, redirect_action: Optional[str], details: dict)
     """
-    subject = get_client_subject(request)
+    if subject is None:
+        subject = get_client_subject(request)
     verb = http_verb or request.method
     client = CyberAccessClient.get_instance()
 
@@ -224,7 +230,7 @@ class CyberAccessSecurityMiddleware:
     a military-grade tactical security lockout response.
     Detects 404 object enumeration attempts on /item(s)/* and /claim(s)/* paths.
     """
-    # Pre-compiled regex to avoid injection; strictly matches object ID paths
+    # Pre-compiled regex to avoid injection; matches object ID paths for item, claim, and record
     _OBJECT_PATH_PATTERN = None
 
     def __init__(self, get_response):
@@ -232,32 +238,95 @@ class CyberAccessSecurityMiddleware:
         if CyberAccessSecurityMiddleware._OBJECT_PATH_PATTERN is None:
             import re
             CyberAccessSecurityMiddleware._OBJECT_PATH_PATTERN = re.compile(
-                r"/(?:item|items|claim|claims)/([a-zA-Z0-9_\-]+)/?$"
+                r"/(?:item|items|claim|claims|record|records)/([a-zA-Z0-9_\-]+)/?$"
             )
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
+        # Early-stage behavioral check: before serving ANY content, check if this subject is flagged
+        if CYBERACCESS_ENABLED and request.method in ['GET', 'POST']:
+            path = request.path
+            # Skip static files and admin
+            static_exts = ('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.map')
+            is_static = any(path.endswith(ext) for ext in static_exts)
+            is_admin = '/admin' in path or '/api/' in path
+
+            if not is_static and not is_admin and self._OBJECT_PATH_PATTERN.search(path):
+                # This is an object access attempt - check upfront if subject is blocked
+                client_ip = get_client_ip(request)
+                m = self._OBJECT_PATH_PATTERN.search(path)
+                if m:
+                    obj_id = m.group(1)
+                    if "record" in path:
+                        resource_type = "record"
+                    elif "claim" in path:
+                        resource_type = "claim"
+                    else:
+                        resource_type = "item"
+                    resource_id = f"{resource_type}_{obj_id}"
+
+                    # EARLY CHECK: Is this subject high-risk? Block before page render
+                    allowed, action, details = enforce_bola(
+                        request=request,
+                        resource_id=resource_id,
+                        is_authorized=False,
+                        resource_name="resource_access_check",
+                        http_verb=request.method,
+                        subject=client_ip,
+                    )
+
+                    # If blocked at entry point, show blocked page BEFORE rendering website
+                    if action == "block":
+                        context = {
+                            "subject": client_ip,
+                            "decision": "block",
+                            "score": details.get("score", 100.0),
+                            "category": details.get("category", "Attack"),
+                            "signals": details.get("signals", ["automated_enumeration"]),
+                            "explanations": details.get("explanations", ["Abnormal access pattern detected. Access quarantined."]),
+                            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                            "contact_email": "security@company.com",
+                        }
+                        return render(request, "cyberaccess_blocked.html", context, status=403)
+
         response = self.get_response(request)
         if response.status_code == 404 and CYBERACCESS_ENABLED:
-            m = self._OBJECT_PATH_PATTERN.search(request.path)
-            if m:
-                obj_id = m.group(1)
-                resource_type = "item" if "item" in request.path else "claim"
+            path = request.path
+            # Skip static/media files
+            static_exts = ('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.map')
+            if not any(path.endswith(ext) for ext in static_exts):
+                m = self._OBJECT_PATH_PATTERN.search(path)
+                if m:
+                    obj_id = m.group(1)
+                    if "record" in path:
+                        resource_type = "record"
+                    elif "claim" in path:
+                        resource_type = "claim"
+                    else:
+                        resource_type = "item"
+                    resource_id = f"{resource_type}_{obj_id}"
+                else:
+                    clean = path.strip('/')
+                    resource_id = f"404_{clean}" if clean else "404_root"
+
+                client_ip = get_client_ip(request)
                 allowed, action, details = enforce_bola(
                     request=request,
-                    resource_id=f"{resource_type}_{obj_id}",
+                    resource_id=resource_id,
                     is_authorized=False,
                     resource_name="404_object_fuzz",
                     http_verb=request.method,
+                    subject=client_ip,
                 )
                 if action == "block":
                     context = {
-                        "subject": get_client_subject(request),
+                        "subject": client_ip,
                         "decision": "block",
                         "score": details.get("score", 100.0),
                         "category": details.get("category", "Attack"),
                         "signals": details.get("signals", ["rapid_enumeration"]),
                         "explanations": details.get("explanations", ["Subject blocked after automated path enumeration."]),
                         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                        "contact_email": "security@company.com",
                     }
                     return render(request, "cyberaccess_blocked.html", context, status=403)
         return response

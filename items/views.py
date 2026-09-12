@@ -171,25 +171,26 @@ def item_detail_view(request, pk):
             raise CyberAccessBOLAException(details)
         return redirect('items:home')
 
+    res_prefix = "record" if "record" in request.path else "item"
     item = Item.objects.filter(pk=pk).first()
     if not item:
         # BOLA Object Enumeration Probe (Attacker fuzzing unknown/unowned object IDs)
         allowed, action, details = enforce_bola(
             request=request,
-            resource_id=f"item_{pk}",
+            resource_id=f"{res_prefix}_{pk}",
             is_authorized=False,
             resource_name="items_fuzz_probe",
             http_verb=request.method,
         )
         if action == "block":
             raise CyberAccessBOLAException(details)
-        messages.error(request, f"Item #{pk} was not found.")
+        messages.error(request, f"{res_prefix.capitalize()} #{pk} was not found.")
         return redirect('items:home')
 
     # Valid item access telemetry
     enforce_bola(
         request=request,
-        resource_id=f"item_{pk}",
+        resource_id=f"{res_prefix}_{pk}",
         is_authorized=True,
         resource_name="items_detail",
         http_verb=request.method,
