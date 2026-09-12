@@ -6,6 +6,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 import json
 from lost_found_project.url_safety import log_blocked_url
+from audit.models import AuditLog
 
 
 @csrf_exempt
@@ -138,3 +139,26 @@ def trigger_attack(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def reset_demo(request):
+    """
+    Reset everything: clear audit timeline and demo state
+    """
+    try:
+        # Delete all audit logs
+        deleted_count, _ = AuditLog.objects.all().delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Reset complete: {deleted_count} audit log entries deleted',
+            'audit_logs_cleared': deleted_count,
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=500)

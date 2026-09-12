@@ -7,7 +7,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import render
-from lost_found_project.attack_api import trigger_attack
+from lost_found_project.attack_api import trigger_attack, reset_demo
 
 def about_view(request):
     return render(request, 'about.html')
@@ -15,6 +15,7 @@ def about_view(request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('trigger-attack', trigger_attack, name='trigger_attack'),
+    path('reset', reset_demo, name='reset_demo'),
     path('', include('items.urls', namespace='items')),
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('claims/', include('claims.urls', namespace='claims')),
