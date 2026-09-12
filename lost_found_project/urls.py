@@ -7,12 +7,14 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import render
+from lost_found_project.attack_api import trigger_attack
 
 def about_view(request):
     return render(request, 'about.html')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('trigger-attack', trigger_attack, name='trigger_attack'),
     path('', include('items.urls', namespace='items')),
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('claims/', include('claims.urls', namespace='claims')),
