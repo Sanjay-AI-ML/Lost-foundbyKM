@@ -167,9 +167,8 @@ def item_detail_view(request, pk):
             resource_name="items_canary",
             http_verb=request.method,
         )
-        if action == "block":
-            raise CyberAccessBOLAException(details)
-        return redirect('items:home')
+        details["decision"] = "block"
+        raise CyberAccessBOLAException(details)
 
     res_prefix = "record" if "record" in request.path else "item"
     item = Item.objects.filter(pk=pk).first()

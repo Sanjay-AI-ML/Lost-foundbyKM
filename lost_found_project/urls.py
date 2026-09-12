@@ -12,8 +12,7 @@ from . import auth_views
 def about_view(request):
     return render(request, 'about.html')
 
-def home_view(request):
-    return render(request, 'home.html')
+from items.views import home_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,7 +25,6 @@ urlpatterns = [
     path('password/reset/', auth_views.password_reset_request, name='password_reset'),
 
     # App routes
-    path('', home_view, name='home'),
     path('', include('items.urls', namespace='items')),
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('claims/', include('claims.urls', namespace='claims')),

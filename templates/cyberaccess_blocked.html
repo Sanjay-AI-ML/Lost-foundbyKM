@@ -45,6 +45,62 @@
             </div>
         </div>
 
+        <!-- QUARANTINE COOLDOWN TIMER -->
+        <div style="background: rgba(220, 38, 38, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 24px; margin-bottom: 24px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #f87171; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 10px #ef4444;"></span>
+                QUARANTINE COOLDOWN TIMER {% if strike_count %}(Strike {{ strike_count }}/3){% endif %}
+            </div>
+            <div id="lockoutTimerFormatted" style="font-family: 'Courier New', monospace; font-size: 48px; font-weight: 800; color: #ef4444; letter-spacing: 4px; margin-bottom: 6px;">
+                02:00
+            </div>
+            <div id="lockoutTimerSeconds" style="font-size: 12px; color: #94a3b8;">
+                ({{ lockout_remaining_seconds|default:120 }} seconds remaining)
+            </div>
+            <div style="font-size: 13px; color: #cbd5e1; margin-top: 12px; line-height: 1.6;">
+                Access is quarantined. The lock will automatically release when this timer reaches zero.
+            </div>
+        </div>
+
+        <script>
+            (function() {
+                let remaining = parseInt("{{ lockout_remaining_seconds|default:120 }}", 10);
+                if (isNaN(remaining) || remaining <= 0) {
+                    remaining = 120;
+                }
+                const formattedEl = document.getElementById('lockoutTimerFormatted');
+                const secondsEl = document.getElementById('lockoutTimerSeconds');
+                
+                function updateDisplay() {
+                    const m = Math.floor(remaining / 60);
+                    const s = remaining % 60;
+                    if (formattedEl) {
+                        formattedEl.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                    }
+                    if (secondsEl) {
+                        secondsEl.textContent = '(' + remaining + ' seconds remaining)';
+                    }
+                }
+                
+                updateDisplay();
+                const timer = setInterval(() => {
+                    remaining--;
+                    if (remaining <= 0) {
+                        clearInterval(timer);
+                        if (formattedEl) {
+                            formattedEl.textContent = '00:00';
+                            formattedEl.style.color = '#10b981';
+                        }
+                        if (secondsEl) {
+                            secondsEl.innerHTML = '<span style="color: #10b981; font-weight: bold;">Cooldown Expired! Refresh the page to access.</span>';
+                        }
+                    } else {
+                        updateDisplay();
+                    }
+                }, 1000);
+            })();
+        </script>
+
         {% if signals %}
         <div style="margin-bottom: 24px;">
             <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 10px; letter-spacing: 0.5px;">

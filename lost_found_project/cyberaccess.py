@@ -276,6 +276,7 @@ class CyberAccessSecurityMiddleware:
 
                     # If blocked at entry point, show blocked page BEFORE rendering website
                     if action == "block":
+                        rem_sec = details.get("lockout_remaining_s", 120) or 120
                         context = {
                             "subject": client_ip,
                             "decision": "block",
@@ -285,6 +286,9 @@ class CyberAccessSecurityMiddleware:
                             "explanations": details.get("explanations", ["Abnormal access pattern detected. Access quarantined."]),
                             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
                             "contact_email": "security@company.com",
+                            "lockout_remaining_seconds": rem_sec,
+                            "strike_count": 1,
+                            "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
                         }
                         return render(request, "cyberaccess_blocked.html", context, status=403)
 
@@ -318,6 +322,44 @@ class CyberAccessSecurityMiddleware:
 
                     # Always show blocked page for 404s on protected resources (security by obscurity)
                     # Don't reveal that resource exists or doesn't exist
+
+                    # Check if subject is under lockout
+                    lockout_info = {
+                        "strike_count": 0,
+                        "is_locked": False,
+                        "lockout_remaining_seconds": 0,
+                        "lockout_type": None
+                    }
+
+                    try:
+                        # Try to get lockout status
+                        now = time.time()
+                        from bola_benchmark import engine, DEMO_TENANT_ID
+                        strike_count = engine.get_strike_count(DEMO_TENANT_ID, client_ip, now)
+
+                        if strike_count >= 1:
+                            # Get last strike to calculate lockout expiration
+                            from django.db import connection
+                            with connection.cursor() as cursor:
+                                cursor.execute(
+                                    "SELECT at FROM risk_strikes WHERE tenant_id = %s AND subject = %s "
+                                    "ORDER BY at DESC LIMIT 1",
+                                    [DEMO_TENANT_ID, client_ip]
+                                )
+                                row = cursor.fetchone()
+                                if row:
+                                    last_strike_time = row[0]
+                                    lockout_duration = 120 if strike_count == 1 else (1800 if strike_count == 2 else 0)
+                                    remaining = max(0, int(last_strike_time + lockout_duration - now))
+                                    lockout_info = {
+                                        "strike_count": min(strike_count, 3),
+                                        "is_locked": remaining > 0,
+                                        "lockout_remaining_seconds": remaining,
+                                        "lockout_type": "soft_lockout_2m" if strike_count == 1 else "hard_lockout_30m"
+                                    }
+                    except Exception as e:
+                        logger.debug(f"Could not get lockout info: {e}")
+
                     context = {
                         "subject": client_ip,
                         "decision": action or "block",
@@ -330,6 +372,7 @@ class CyberAccessSecurityMiddleware:
                         ]),
                         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
                         "contact_email": "security@company.com",
+                        **lockout_info  # Add lockout info to context
                     }
                     # Return blocked page instead of 404 error message
                     return render(request, "cyberaccess_blocked.html", context, status=403)
@@ -337,6 +380,7 @@ class CyberAccessSecurityMiddleware:
 
     def process_exception(self, request: HttpRequest, exception: Exception):
         if isinstance(exception, CyberAccessBOLAException):
+            rem_sec = exception.payload.get("lockout_remaining_s", 120) or 120
             context = {
                 "subject": get_client_subject(request),
                 "decision": exception.decision,
@@ -345,6 +389,10 @@ class CyberAccessSecurityMiddleware:
                 "signals": exception.signals,
                 "explanations": exception.explanations,
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                "contact_email": "security@company.com",
+                "lockout_remaining_seconds": rem_sec,
+                "strike_count": 1,
+                "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
             }
             return render(request, "cyberaccess_blocked.html", context, status=403)
         return None
