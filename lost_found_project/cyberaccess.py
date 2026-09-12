@@ -239,6 +239,16 @@ def enforce_bola(
     return True, None, result
 
 
+def render_cyberaccess_blocked(request: HttpRequest, context: dict, status: int = 403) -> HttpResponse:
+    """Renders the full-screen integrity warning takeover with strict no-cache headers."""
+    response = render(request, "cyberaccess_blocked.html", context, status=status)
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, private"
+    response["Pragma"] = "no-cache"
+    response["Expires"] = "0"
+    response["Clear-Site-Data"] = '"cache", "storage"'
+    return response
+
+
 class CyberAccessSecurityMiddleware:
     """
     Django Middleware to catch CyberAccessBOLAException and render
@@ -296,7 +306,7 @@ class CyberAccessSecurityMiddleware:
                         "strike_count": strike_count,
                         "lockout_type": f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m",
                     }
-                    return render(request, "cyberaccess_blocked.html", context, status=403)
+                    return render_cyberaccess_blocked(request, context, status=403)
 
                 # 2. Object Access Check
                 if self._OBJECT_PATH_PATTERN.search(path):
@@ -337,7 +347,7 @@ class CyberAccessSecurityMiddleware:
                                 "strike_count": 1,
                                 "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
                             }
-                            return render(request, "cyberaccess_blocked.html", context, status=403)
+                            return render_cyberaccess_blocked(request, context, status=403)
 
         response = self.get_response(request)
         if response.status_code == 404 and CYBERACCESS_ENABLED:
@@ -375,6 +385,7 @@ class CyberAccessSecurityMiddleware:
                         "strike_count": 0,
                         "is_locked": False,
                         "lockout_remaining_seconds": 0,
+                        "lockout_expires_at": None,
                         "lockout_type": None
                     }
 
@@ -385,25 +396,16 @@ class CyberAccessSecurityMiddleware:
                         strike_count = engine.get_strike_count(DEMO_TENANT_ID, client_ip, now)
 
                         if strike_count >= 1:
-                            # Get last strike to calculate lockout expiration
-                            from django.db import connection
-                            with connection.cursor() as cursor:
-                                cursor.execute(
-                                    "SELECT at FROM risk_strikes WHERE tenant_id = %s AND subject = %s "
-                                    "ORDER BY at DESC LIMIT 1",
-                                    [DEMO_TENANT_ID, client_ip]
-                                )
-                                row = cursor.fetchone()
-                                if row:
-                                    last_strike_time = row[0]
-                                    lockout_duration = 120 if strike_count == 1 else (1800 if strike_count == 2 else 0)
-                                    remaining = max(0, int(last_strike_time + lockout_duration - now))
-                                    lockout_info = {
-                                        "strike_count": min(strike_count, 3),
-                                        "is_locked": remaining > 0,
-                                        "lockout_remaining_seconds": remaining,
-                                        "lockout_type": "soft_lockout_2m" if strike_count == 1 else "hard_lockout_30m"
-                                    }
+                            # Get lockout expiration timestamp
+                            blocked_until = engine.blocked_until(DEMO_TENANT_ID, client_ip)
+                            remaining = max(0, int(blocked_until - now))
+                            lockout_info = {
+                                "strike_count": min(strike_count, 3),
+                                "is_locked": remaining > 0,
+                                "lockout_remaining_seconds": remaining,
+                                "lockout_expires_at": int(blocked_until),
+                                "lockout_type": "soft_lockout_2m" if strike_count == 1 else "hard_lockout_30m"
+                            }
                     except Exception as e:
                         logger.debug(f"Could not get lockout info: {e}")
 
@@ -422,7 +424,7 @@ class CyberAccessSecurityMiddleware:
                         **lockout_info  # Add lockout info to context
                     }
                     # Return blocked page instead of 404 error message
-                    return render(request, "cyberaccess_blocked.html", context, status=403)
+                    return render_cyberaccess_blocked(request, context, status=403)
         return response
 
     def process_exception(self, request: HttpRequest, exception: Exception):
@@ -451,5 +453,5 @@ class CyberAccessSecurityMiddleware:
                 "strike_count": strike_count,
                 "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
             }
-            return render(request, "cyberaccess_blocked.html", context, status=403)
+            return render_cyberaccess_blocked(request, context, status=403)
         return None

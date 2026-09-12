@@ -418,6 +418,21 @@
                 Our automated behavioral engine detected an unauthorized object enumeration probe originating from this identity. In accordance with zero-trust endpoint protection, all application endpoints, session tokens, and navigation channels are quarantined.
             </div>
 
+            <!-- Browser Back Navigation Lockout Alert Banner -->
+            <div id="backNavLockoutBanner" style="display: flex; align-items: center; gap: 14px; background: rgba(220, 38, 38, 0.15); border: 1px solid rgba(239, 68, 68, 0.45); border-radius: 10px; padding: 14px 18px; margin-bottom: 22px; transition: all 0.3s ease;">
+                <div style="width: 36px; height: 36px; border-radius: 8px; background: #ef4444; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);">
+                    <i class="fa-solid fa-ban"></i>
+                </div>
+                <div>
+                    <div style="font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #ffffff; font-size: 12px; margin-bottom: 2px;">
+                        Navigation &amp; Browser History Locked
+                    </div>
+                    <div style="font-size: 13px; color: #fca5a5; line-height: 1.5;">
+                        Browser <strong>"Back" button</strong> and previous page history are strictly disabled. Session state is isolated to prevent duplicate attack execution.
+                    </div>
+                </div>
+            </div>
+
             <!-- Metadata Panel -->
             <div class="meta-grid">
                 <div class="meta-box">
@@ -496,8 +511,83 @@
         </div>
     </div>
 
-    <!-- Real-Time Quarantine Countdown & Auto-Release Engine -->
+    <!-- Real-Time Quarantine Countdown, Back Navigation Trap & Auto-Release Engine -->
     <script>
+        // 1. HARD BROWSER BACK BUTTON LOCKOUT TRAP
+        // Completely intercepts and prevents browser back button, bfcache restoration, and history evasion
+        (function() {
+            // Replace current state and push trap states into browser history
+            try {
+                window.history.replaceState(null, document.title, window.location.href);
+                window.history.pushState(null, document.title, window.location.href);
+                window.history.pushState(null, document.title, window.location.href);
+            } catch(e) {}
+
+            function triggerBackBlockedAlert() {
+                const banner = document.getElementById('backNavLockoutBanner');
+                if (banner) {
+                    banner.style.boxShadow = '0 0 30px #ef4444';
+                    banner.style.borderColor = '#ef4444';
+                    banner.style.background = 'rgba(239, 68, 68, 0.3)';
+                    setTimeout(() => {
+                        banner.style.boxShadow = 'none';
+                        banner.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+                        banner.style.background = 'rgba(220, 38, 38, 0.15)';
+                    }, 900);
+                }
+            }
+
+            // Intercept browser back / forward navigation
+            window.addEventListener('popstate', function(event) {
+                // Instantly push state forward so user remains trapped on this screen
+                try {
+                    window.history.pushState(null, document.title, window.location.href);
+                } catch(e) {}
+                triggerBackBlockedAlert();
+            });
+
+            // Block keyboard navigation shortcuts for 'Back' (Alt+Left, Backspace, Cmd+Left, Cmd+[)
+            window.addEventListener('keydown', function(e) {
+                // Alt + Left Arrow (Windows / Linux Back)
+                if (e.altKey && (e.key === 'ArrowLeft' || e.keyCode === 37)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    triggerBackBlockedAlert();
+                    return false;
+                }
+                // Command + Left Arrow or Command + [ (Mac Back)
+                if (e.metaKey && (e.key === 'ArrowLeft' || e.key === '[' || e.keyCode === 37 || e.keyCode === 219)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    triggerBackBlockedAlert();
+                    return false;
+                }
+                // Backspace outside input/textarea
+                if (e.key === 'Backspace' || e.keyCode === 8) {
+                    const tag = (e.target.tagName || '').toLowerCase();
+                    if (tag !== 'input' && tag !== 'textarea') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        triggerBackBlockedAlert();
+                        return false;
+                    }
+                }
+            }, true);
+
+            // Invalidate back-forward cache (bfcache)
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    window.location.reload();
+                }
+            });
+
+            // Clear any local / session form data to eliminate repeat payload submissions
+            try {
+                sessionStorage.clear();
+            } catch(e) {}
+        })();
+
+        // 2. Real-Time Quarantine Countdown & Auto-Release
         (function() {
             let remaining = parseInt("{{ lockout_remaining_seconds|default:120 }}", 10);
             if (isNaN(remaining) || remaining <= 0) {
