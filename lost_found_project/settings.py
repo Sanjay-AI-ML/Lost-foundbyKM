@@ -42,6 +42,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'lost_found_project.cyberaccess.CyberAccessSecurityMiddleware',
 ]
 
 ROOT_URLCONF = 'lost_found_project.urls'
@@ -115,3 +116,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'items:home'
 LOGOUT_REDIRECT_URL = 'accounts:login'
+
+# CyberAccess BOLA Defense Engine Configuration (OWASP API1:2023)
+CYBERACCESS_ENABLED = os.environ.get('CYBERACCESS_ENABLED', 'true').lower() in ('true', '1', 'yes')
+CYBERACCESS_API_URL = os.environ.get('CYBERACCESS_API_URL', 'http://127.0.0.1:8000')
+CYBERACCESS_API_KEY = os.environ.get('CYBERACCESS_API_KEY')
+CYBERACCESS_FAIL_OPEN = os.environ.get('CYBERACCESS_FAIL_OPEN', 'true').lower() in ('true', '1', 'yes')
+CYBERACCESS_TIMEOUT = float(os.environ.get('CYBERACCESS_TIMEOUT', '2.0'))
+CYBERACCESS_CANARIES = os.environ.get('CYBERACCESS_CANARIES', '0,999999,canary_admin_vault').split(',')

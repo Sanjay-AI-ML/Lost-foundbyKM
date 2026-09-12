@@ -6,6 +6,7 @@ from .models import Claim
 from .forms import ClaimSubmissionForm, ClaimReviewForm
 from items.models import Item
 from notifications.models import Notification
+from lost_found_project.cyberaccess import enforce_bola, CyberAccessBOLAException
 
 
 @login_required
@@ -54,12 +55,36 @@ def submit_claim_view(request, item_id):
 
 @login_required
 def claim_status_view(request, claim_id):
-    claim = get_object_or_404(Claim, pk=claim_id)
+    claim = Claim.objects.filter(pk=claim_id).first()
+    if not claim:
+        allowed, action, details = enforce_bola(
+            request=request,
+            resource_id=f"claim_{claim_id}",
+            is_authorized=False,
+            resource_name="claims_fuzz_probe",
+            http_verb=request.method,
+        )
+        if action == "block":
+            raise CyberAccessBOLAException(details)
+        messages.error(request, f'Claim #{claim_id} does not exist.')
+        return redirect('items:home')
 
     is_claimant = (request.user == claim.claimant)
     is_item_owner = (request.user == claim.item.user)
+    is_authorized = bool(is_claimant or is_item_owner or request.user.is_staff)
 
-    if not (is_claimant or is_item_owner or request.user.is_staff):
+    # CyberAccess Deterministic Gate + Behavioral Engine
+    allowed, action, details = enforce_bola(
+        request=request,
+        resource_id=f"claim_{claim_id}",
+        is_authorized=is_authorized,
+        resource_name="claims_status",
+        http_verb=request.method,
+    )
+
+    if not allowed:
+        if action == "block":
+            raise CyberAccessBOLAException(details)
         messages.error(request, 'You do not have permission to view this claim.')
         return redirect('items:home')
 

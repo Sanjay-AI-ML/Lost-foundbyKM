@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from .models import Item, Category
 from .forms import ItemForm, ItemSearchForm
 from claims.models import Claim
+from lost_found_project.cyberaccess import enforce_bola, CyberAccessBOLAException, CYBERACCESS_CANARIES
 
 
 def build_search_filter(search_query):
@@ -157,7 +158,42 @@ def found_items_view(request):
 
 
 def item_detail_view(request, pk):
-    item = get_object_or_404(Item, pk=pk)
+    # CyberAccess Canary Honeypot Trap
+    if str(pk).strip() in CYBERACCESS_CANARIES:
+        allowed, action, details = enforce_bola(
+            request=request,
+            resource_id=str(pk),
+            is_authorized=False,
+            resource_name="items_canary",
+            http_verb=request.method,
+        )
+        if action == "block":
+            raise CyberAccessBOLAException(details)
+        return redirect('items:home')
+
+    item = Item.objects.filter(pk=pk).first()
+    if not item:
+        # BOLA Object Enumeration Probe (Attacker fuzzing unknown/unowned object IDs)
+        allowed, action, details = enforce_bola(
+            request=request,
+            resource_id=f"item_{pk}",
+            is_authorized=False,
+            resource_name="items_fuzz_probe",
+            http_verb=request.method,
+        )
+        if action == "block":
+            raise CyberAccessBOLAException(details)
+        messages.error(request, f"Item #{pk} was not found.")
+        return redirect('items:home')
+
+    # Valid item access telemetry
+    enforce_bola(
+        request=request,
+        resource_id=f"item_{pk}",
+        is_authorized=True,
+        resource_name="items_detail",
+        http_verb=request.method,
+    )
     related_items = Item.objects.filter(category=item.category, item_type=item.item_type).exclude(pk=item.pk)[:4]
     
     # Check if user already claimed this item
@@ -225,7 +261,19 @@ def add_found_item_view(request):
 @login_required
 def edit_item_view(request, pk):
     item = get_object_or_404(Item, pk=pk)
-    if item.user != request.user and not request.user.is_staff:
+    is_authorized = bool(item.user == request.user or request.user.is_staff)
+
+    # CyberAccess Mutation BOLA Check (POST / PUT)
+    allowed, action, details = enforce_bola(
+        request=request,
+        resource_id=f"item_{pk}",
+        is_authorized=is_authorized,
+        resource_name="items_edit",
+        http_verb="PUT" if request.method == "POST" else "GET",
+    )
+    if not allowed:
+        if action == "block":
+            raise CyberAccessBOLAException(details)
         messages.error(request, 'You do not have permission to edit this item.')
         return redirect('items:item_detail', pk=pk)
 
@@ -246,7 +294,19 @@ def edit_item_view(request, pk):
 @login_required
 def delete_item_view(request, pk):
     item = get_object_or_404(Item, pk=pk)
-    if item.user != request.user and not request.user.is_staff:
+    is_authorized = bool(item.user == request.user or request.user.is_staff)
+
+    # CyberAccess Mutation BOLA Check (DELETE has 3.0x risk penalty)
+    allowed, action, details = enforce_bola(
+        request=request,
+        resource_id=f"item_{pk}",
+        is_authorized=is_authorized,
+        resource_name="items_delete",
+        http_verb="DELETE" if request.method == "POST" else "GET",
+    )
+    if not allowed:
+        if action == "block":
+            raise CyberAccessBOLAException(details)
         messages.error(request, 'You do not have permission to delete this item.')
         return redirect('items:item_detail', pk=pk)
 
