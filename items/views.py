@@ -181,10 +181,9 @@ def item_detail_view(request, pk):
             resource_name="items_fuzz_probe",
             http_verb=request.method,
         )
-        if action == "block":
-            raise CyberAccessBOLAException(details)
-        messages.error(request, f"{res_prefix.capitalize()} #{pk} was not found.")
-        return redirect('items:home')
+        # CRITICAL: Never show raw 'Record was not found' or information disclosure messages.
+        # Always intercept with the professional CyberAccess Protected Resource shield.
+        raise CyberAccessBOLAException(details)
 
     # Valid item access telemetry
     enforce_bola(
@@ -260,7 +259,17 @@ def add_found_item_view(request):
 
 @login_required
 def edit_item_view(request, pk):
-    item = get_object_or_404(Item, pk=pk)
+    item = Item.objects.filter(pk=pk).first()
+    if not item:
+        allowed, action, details = enforce_bola(
+            request=request,
+            resource_id=f"item_{pk}",
+            is_authorized=False,
+            resource_name="items_edit_probe",
+            http_verb=request.method,
+        )
+        raise CyberAccessBOLAException(details)
+
     is_authorized = bool(item.user == request.user or request.user.is_staff)
 
     # CyberAccess Mutation BOLA Check (POST / PUT)
@@ -272,10 +281,7 @@ def edit_item_view(request, pk):
         http_verb="PUT" if request.method == "POST" else "GET",
     )
     if not allowed:
-        if action == "block":
-            raise CyberAccessBOLAException(details)
-        messages.error(request, 'You do not have permission to edit this item.')
-        return redirect('items:item_detail', pk=pk)
+        raise CyberAccessBOLAException(details)
 
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES, instance=item)
@@ -293,7 +299,17 @@ def edit_item_view(request, pk):
 
 @login_required
 def delete_item_view(request, pk):
-    item = get_object_or_404(Item, pk=pk)
+    item = Item.objects.filter(pk=pk).first()
+    if not item:
+        allowed, action, details = enforce_bola(
+            request=request,
+            resource_id=f"item_{pk}",
+            is_authorized=False,
+            resource_name="items_delete_probe",
+            http_verb=request.method,
+        )
+        raise CyberAccessBOLAException(details)
+
     is_authorized = bool(item.user == request.user or request.user.is_staff)
 
     # CyberAccess Mutation BOLA Check (DELETE has 3.0x risk penalty)
@@ -305,10 +321,7 @@ def delete_item_view(request, pk):
         http_verb="DELETE" if request.method == "POST" else "GET",
     )
     if not allowed:
-        if action == "block":
-            raise CyberAccessBOLAException(details)
-        messages.error(request, 'You do not have permission to delete this item.')
-        return redirect('items:item_detail', pk=pk)
+        raise CyberAccessBOLAException(details)
 
     if request.method == 'POST':
         title = item.title

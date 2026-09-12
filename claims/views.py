@@ -64,10 +64,7 @@ def claim_status_view(request, claim_id):
             resource_name="claims_fuzz_probe",
             http_verb=request.method,
         )
-        if action == "block":
-            raise CyberAccessBOLAException(details)
-        messages.error(request, f'Claim #{claim_id} does not exist.')
-        return redirect('items:home')
+        raise CyberAccessBOLAException(details)
 
     is_claimant = (request.user == claim.claimant)
     is_item_owner = (request.user == claim.item.user)
@@ -83,10 +80,7 @@ def claim_status_view(request, claim_id):
     )
 
     if not allowed:
-        if action == "block":
-            raise CyberAccessBOLAException(details)
-        messages.error(request, 'You do not have permission to view this claim.')
-        return redirect('items:home')
+        raise CyberAccessBOLAException(details)
 
     review_form = None
     if is_item_owner or request.user.is_staff:

@@ -380,7 +380,17 @@ class CyberAccessSecurityMiddleware:
 
     def process_exception(self, request: HttpRequest, exception: Exception):
         if isinstance(exception, CyberAccessBOLAException):
-            rem_sec = exception.payload.get("lockout_remaining_s", 120) or 120
+            is_blocked = (exception.decision == "block")
+            rem_sec = int(exception.payload.get("lockout_remaining_s", 0) or 0)
+            if is_blocked and rem_sec <= 0:
+                rem_sec = 120
+            elif not is_blocked and rem_sec <= 0:
+                rem_sec = 0
+
+            strike_count = exception.payload.get("strike_count")
+            if not strike_count:
+                strike_count = 1 if is_blocked else 0
+
             context = {
                 "subject": get_client_subject(request),
                 "decision": exception.decision,
@@ -391,7 +401,7 @@ class CyberAccessSecurityMiddleware:
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
                 "contact_email": "security@company.com",
                 "lockout_remaining_seconds": rem_sec,
-                "strike_count": 1,
+                "strike_count": strike_count,
                 "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
             }
             return render(request, "cyberaccess_blocked.html", context, status=403)
