@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Items - Lost & Found</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            text-decoration: none;
+            color: #00bfff;
+        }
+
+        .nav-right {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #00bfff;
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Page Header */
+        .page-header {
+            margin-bottom: 40px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: #94a3b8;
+            font-size: 16px;
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 32px;
+            margin-bottom: 40px;
+        }
+
+        /* Sidebar - Filters */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .filter-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .filter-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #00bfff;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-item input[type="checkbox"],
+        .filter-item input[type="radio"] {
+            cursor: pointer;
+            accent-color: #00bfff;
+        }
+
+        .filter-item label {
+            cursor: pointer;
+            font-size: 13px;
+            margin: 0;
+        }
+
+        .search-box {
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+
+        .search-input::placeholder {
+            color: #64748b;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: rgba(0, 191, 255, 0.5);
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        /* Main Content */
+        .content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .results-info {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .sort-select {
+            padding: 8px 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 6px;
+            color: #e2e8f0;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .sort-select:focus {
+            outline: none;
+            border-color: rgba(0, 191, 255, 0.5);
+        }
+
+        /* Items Grid */
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .item-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-card:hover {
+            border-color: rgba(0, 191, 255, 0.4);
+            background: rgba(30, 41, 59, 0.95);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 191, 255, 0.15);
+        }
+
+        .item-image {
+            width: 100%;
+            height: 160px;
+            background: linear-gradient(135deg, rgba(0, 191, 255, 0.2), rgba(0, 99, 204, 0.2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            position: relative;
+        }
+
+        .item-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 8px;
+            background: rgba(34, 197, 94, 0.8);
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .item-badge.lost {
+            background: rgba(239, 68, 68, 0.8);
+        }
+
+        .item-content {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .item-title {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 8px;
+            color: #e2e8f0;
+            line-height: 1.3;
+        }
+
+        .item-category {
+            font-size: 11px;
+            color: #00bfff;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .item-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+
+        .detail-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            margin-top: auto;
+        }
+
+        .item-finder {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .btn-contact {
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #00bfff, #0099cc);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-contact:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 191, 255, 0.3);
+        }
+
+        /* Empty State */
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 40px;
+        }
+
+        .pagination-btn {
+            padding: 8px 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            color: #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .pagination-btn:hover {
+            border-color: rgba(0, 191, 255, 0.5);
+            color: #00bfff;
+        }
+
+        .pagination-btn.active {
+            background: rgba(0, 191, 255, 0.15);
+            border-color: rgba(0, 191, 255, 0.4);
+            color: #00bfff;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 24px 0;
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .items-grid {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }
+
+            .main-grid {
+                gap: 24px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .items-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+
+            .sort-controls {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px 12px;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+
+            .items-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 12px;
+            }
+
+            .item-image {
+                height: 120px;
+                font-size: 32px;
+            }
+
+            .item-content {
+                padding: 12px;
+            }
+
+            .item-title {
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <nav>
+            <a href="/" class="logo">
+                <span>📍</span>
+                Lost & Found
+            </a>
+            <div class="nav-right">
+                <a href="/dashboard/" class="nav-link">Dashboard</a>
+                <a href="/messages/" class="nav-link">Messages</a>
+                <form method="POST" action="/logout/" style="margin: 0; display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-logout">Logout</button>
+                </form>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Container -->
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Browse Lost & Found Items</h1>
+            <p class="page-subtitle">Find items that have been lost and found in your area</p>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Sidebar - Filters -->
+            <div class="sidebar">
+                <!-- Search -->
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="Search items..." id="searchInput">
+                </div>
+
+                <!-- Type Filter -->
+                <div class="filter-card">
+                    <div class="filter-title">Item Type</div>
+                    <div class="filter-group">
+                        <div class="filter-item">
+                            <input type="checkbox" id="filter-found" checked>
+                            <label for="filter-found">Found Items</label>
+                        </div>
+                        <div class="filter-item">
+                            <input type="checkbox" id="filter-lost">
+                            <label for="filter-lost">Lost Items</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category Filter -->
+                <div class="filter-card">
+                    <div class="filter-title">Category</div>
+                    <div class="filter-group">
+                        <div class="filter-item">
+                            <input type="checkbox" id="cat-electronics" checked>
+                            <label for="cat-electronics">Electronics</label>
+                        </div>
+                        <div class="filter-item">
+                            <input type="checkbox" id="cat-accessories">
+                            <label for="cat-accessories">Accessories</label>
+                        </div>
+                        <div class="filter-item">
+                            <input type="checkbox" id="cat-documents">
+                            <label for="cat-documents">Documents</label>
+                        </div>
+                        <div class="filter-item">
+                            <input type="checkbox" id="cat-keys">
+                            <label for="cat-keys">Keys</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Filter -->
+                <div class="filter-card">
+                    <div class="filter-title">Location</div>
+                    <div class="filter-group">
+                        <div class="filter-item">
+                            <input type="checkbox" id="loc-downtown" checked>
+                            <label for="loc-downtown">Downtown</label>
+                        </div>
+                        <div class="filter-item">
+                            <input type="checkbox" id="loc-mall">
+                            <label for="loc-mall">Shopping Mall</label>
+                        </div>
+                        <div class="filter-item">
+                            <input type="checkbox" id="loc-park">
+                            <label for="loc-park">Parks</label>
+                        </div>
+                        <div class="filter-item">
+                            <input type="checkbox" id="loc-library">
+                            <label for="loc-library">Library</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="content">
+                <!-- Content Header -->
+                <div class="content-header">
+                    <div class="results-info">
+                        Showing <strong id="itemCount">24</strong> items
+                    </div>
+                    <div class="sort-controls">
+                        <label for="sortBy" style="font-size: 13px; color: #94a3b8;">Sort by:</label>
+                        <select class="sort-select" id="sortBy">
+                            <option value="recent">Most Recent</option>
+                            <option value="popular">Most Popular</option>
+                            <option value="category">Category</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Items Grid -->
+                <div class="items-grid">
+                    <!-- Item 1: Found -->
+                    <div class="item-card">
+                        <div class="item-image">
+                            📱
+                            <div class="item-badge">Found</div>
+                        </div>
+                        <div class="item-content">
+                            <div class="item-category">Electronics</div>
+                            <div class="item-title">iPhone 14 Pro Space Black</div>
+                            <div class="item-details">
+                                <div class="detail-row">📍 Downtown</div>
+                                <div class="detail-row">⏰ 2 days ago</div>
+                                <div class="detail-row">👤 John Doe</div>
+                            </div>
+                            <div class="item-footer">
+                                <span class="item-finder">Found by John Doe</span>
+                                <button class="btn-contact">Message</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Item 2: Lost -->
+                    <div class="item-card">
+                        <div class="item-image">
+                            🎒
+                            <div class="item-badge lost">Lost</div>
+                        </div>
+                        <div class="item-content">
+                            <div class="item-category">Accessories</div>
+                            <div class="item-title">Blue Backpack with Laptop</div>
+                            <div class="item-details">
+                                <div class="detail-row">📍 Shopping Mall</div>
+                                <div class="detail-row">⏰ 1 day ago</div>
+                                <div class="detail-row">👤 Sarah Miller</div>
+                            </div>
+                            <div class="item-footer">
+                                <span class="item-finder">Offered by Sarah</span>
+                                <button class="btn-contact">Message</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Item 3: Found -->
+                    <div class="item-card">
+                        <div class="item-image">
+                            🔑
+                            <div class="item-badge">Found</div>
+                        </div>
+                        <div class="item-content">
+                            <div class="item-category">Keys</div>
+                            <div class="item-title">House Keys with Blue Tag</div>
+                            <div class="item-details">
+                                <div class="detail-row">📍 Parks</div>
+                                <div class="detail-row">⏰ 3 days ago</div>
+                                <div class="detail-row">👤 Mike Chen</div>
+                            </div>
+                            <div class="item-footer">
+                                <span class="item-finder">Found by Mike Chen</span>
+                                <button class="btn-contact">Message</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Item 4: Found -->
+                    <div class="item-card">
+                        <div class="item-image">
+                            👓
+                            <div class="item-badge">Found</div>
+                        </div>
+                        <div class="item-content">
+                            <div class="item-category">Accessories</div>
+                            <div class="item-title">Prescription Glasses Brown Frame</div>
+                            <div class="item-details">
+                                <div class="detail-row">📍 Library</div>
+                                <div class="detail-row">⏰ 1 week ago</div>
+                                <div class="detail-row">👤 Emily Rodriguez</div>
+                            </div>
+                            <div class="item-footer">
+                                <span class="item-finder">Found by Emily</span>
+                                <button class="btn-contact">Message</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Item 5: Found -->
+                    <div class="item-card">
+                        <div class="item-image">
+                            👜
+                            <div class="item-badge">Found</div>
+                        </div>
+                        <div class="item-content">
+                            <div class="item-category">Accessories</div>
+                            <div class="item-title">Black Leather Wallet</div>
+                            <div class="item-details">
+                                <div class="detail-row">📍 Downtown</div>
+                                <div class="detail-row">⏰ 4 days ago</div>
+                                <div class="detail-row">👤 Robert Johnson</div>
+                            </div>
+                            <div class="item-footer">
+                                <span class="item-finder">Found by Robert</span>
+                                <button class="btn-contact">Message</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Item 6: Found -->
+                    <div class="item-card">
+                        <div class="item-image">
+                            ⌚
+                            <div class="item-badge">Found</div>
+                        </div>
+                        <div class="item-content">
+                            <div class="item-category">Electronics</div>
+                            <div class="item-title">Apple Watch Series 8</div>
+                            <div class="item-details">
+                                <div class="detail-row">📍 Shopping Mall</div>
+                                <div class="detail-row">⏰ 5 days ago</div>
+                                <div class="detail-row">👤 Lisa Wang</div>
+                            </div>
+                            <div class="item-footer">
+                                <span class="item-finder">Found by Lisa Wang</span>
+                                <button class="btn-contact">Message</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="pagination-btn active">1</button>
+                    <button class="pagination-btn">2</button>
+                    <button class="pagination-btn">3</button>
+                    <button class="pagination-btn">→ Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Lost & Found. Secured by CyberAccess BOLA Defense. Find your items safely.</p>
+    </footer>
+
+    <script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.item-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                const isVisible = text.includes(query);
+                card.style.display = isVisible ? 'flex' : 'none';
+                if (isVisible) visibleCount++;
+            });
+
+            document.getElementById('itemCount').textContent = visibleCount;
+        });
+
+        // Message button action
+        document.querySelectorAll('.btn-contact').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = '/messages/';
+            });
+        });
+    </script>
+</body>
+</html>
