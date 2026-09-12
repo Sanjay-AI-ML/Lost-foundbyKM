@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - Lost & Found</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            text-decoration: none;
+            color: #00bfff;
+        }
+
+        .nav-right {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 24px;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Sidebar - Conversation List */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #00bfff;
+        }
+
+        .search-box {
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 13px;
+        }
+
+        .search-input::placeholder {
+            color: #64748b;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: rgba(0, 191, 255, 0.5);
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        .conversation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .conversation-item {
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .conversation-item:hover {
+            background: rgba(15, 23, 42, 0.7);
+            border-color: rgba(0, 191, 255, 0.3);
+        }
+
+        .conversation-item.active {
+            background: rgba(0, 191, 255, 0.15);
+            border-color: rgba(0, 191, 255, 0.4);
+        }
+
+        .conv-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .conv-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00bfff, #0099cc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 13px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .conv-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .conv-name {
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conv-item-title {
+            font-size: 11px;
+            color: #94a3b8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conv-preview {
+            font-size: 12px;
+            color: #94a3b8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.3;
+        }
+
+        .conv-unread {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            background: #ef4444;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        /* Main Area - Chat */
+        .chat-area {
+            display: flex;
+            flex-direction: column;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .chat-header-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chat-header-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00bfff, #0099cc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            color: white;
+        }
+
+        .chat-header-text h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .chat-header-text p {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .chat-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: rgba(148, 163, 184, 0.1);
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: rgba(0, 191, 255, 0.15);
+            color: #00bfff;
+        }
+
+        /* Messages */
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .message.own {
+            justify-content: flex-end;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00bfff, #0099cc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 13px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .message.own .message-avatar {
+            order: 2;
+        }
+
+        .message-content {
+            max-width: 60%;
+        }
+
+        .message-bubble {
+            background: rgba(0, 191, 255, 0.15);
+            border: 1px solid rgba(0, 191, 255, 0.3);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 13px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .message.own .message-bubble {
+            background: rgba(0, 191, 255, 0.25);
+            border-color: rgba(0, 191, 255, 0.5);
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .message.own .message-time {
+            text-align: right;
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .empty-state p {
+            margin-bottom: 8px;
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 16px 24px;
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            background: rgba(15, 23, 42, 0.3);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 10px 14px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 13px;
+            font-family: inherit;
+            resize: none;
+            max-height: 100px;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: rgba(0, 191, 255, 0.5);
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        .btn-send {
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #00bfff, #0099cc);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-send:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 191, 255, 0.3);
+        }
+
+        .btn-send:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .message-content {
+                max-width: 90%;
+            }
+
+            .chat-header-text h3 {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px 12px;
+                gap: 12px;
+            }
+
+            .chat-header {
+                padding: 12px 16px;
+            }
+
+            .messages {
+                padding: 16px;
+            }
+
+            .input-area {
+                padding: 12px 16px;
+            }
+
+            .message-bubble {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <nav>
+            <a href="/" class="logo">
+                <span>📍</span>
+                Lost & Found
+            </a>
+            <div class="nav-right">
+                <form method="POST" action="/logout/" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-logout">Logout</button>
+                </form>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Sidebar - Conversation List -->
+        <div class="sidebar">
+            <div class="sidebar-header">💬 Messages</div>
+
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Search conversations..." id="searchInput">
+            </div>
+
+            <div class="conversation-list">
+                <!-- Conversation 1 -->
+                <a href="#" class="conversation-item active">
+                    <div class="conv-header">
+                        <div class="conv-avatar">JD</div>
+                        <div class="conv-info">
+                            <div class="conv-name">John Doe</div>
+                            <div class="conv-item-title">About: iPhone 14 Pro</div>
+                        </div>
+                    </div>
+                    <div class="conv-preview">Yeah, I can meet you tomorrow at noon!</div>
+                </a>
+
+                <!-- Conversation 2 -->
+                <a href="#" class="conversation-item">
+                    <div class="conv-header">
+                        <div class="conv-avatar">SM</div>
+                        <div class="conv-info">
+                            <div class="conv-name">Sarah Miller</div>
+                            <div class="conv-item-title">About: House Keys</div>
+                        </div>
+                        <div class="conv-unread">2</div>
+                    </div>
+                    <div class="conv-preview">I found your keys near the park entrance</div>
+                </a>
+
+                <!-- Conversation 3 -->
+                <a href="#" class="conversation-item">
+                    <div class="conv-header">
+                        <div class="conv-avatar">MC</div>
+                        <div class="conv-info">
+                            <div class="conv-name">Mike Chen</div>
+                            <div class="conv-item-title">About: Wallet</div>
+                        </div>
+                    </div>
+                    <div class="conv-preview">Is your wallet still available?</div>
+                </a>
+
+                <!-- Conversation 4 -->
+                <a href="#" class="conversation-item">
+                    <div class="conv-header">
+                        <div class="conv-avatar">ER</div>
+                        <div class="conv-info">
+                            <div class="conv-name">Emily Rodriguez</div>
+                            <div class="conv-item-title">About: Glasses</div>
+                        </div>
+                    </div>
+                    <div class="conv-preview">Found glasses at the library</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Chat Area -->
+        <div class="chat-area">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <div class="chat-header-info">
+                    <div class="chat-header-avatar">JD</div>
+                    <div class="chat-header-text">
+                        <h3>John Doe</h3>
+                        <p>About: iPhone 14 Pro</p>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <button class="icon-btn" title="Call">📞</button>
+                    <button class="icon-btn" title="Info">ℹ️</button>
+                    <button class="icon-btn" title="More">⋯</button>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            <div class="messages">
+                <div class="message">
+                    <div class="message-avatar">JD</div>
+                    <div class="message-content">
+                        <div class="message-bubble">Hey, I saw you posted about an iPhone 14 Pro</div>
+                        <div class="message-time">2:30 PM</div>
+                    </div>
+                </div>
+
+                <div class="message">
+                    <div class="message-avatar">JD</div>
+                    <div class="message-content">
+                        <div class="message-bubble">I found one last week near the mall. Is it yours?</div>
+                        <div class="message-time">2:32 PM</div>
+                    </div>
+                </div>
+
+                <div class="message own">
+                    <div class="message-content">
+                        <div class="message-bubble">Oh wow, yes! That could be mine! Do you have it with you?</div>
+                        <div class="message-time">2:35 PM</div>
+                    </div>
+                </div>
+
+                <div class="message own">
+                    <div class="message-content">
+                        <div class="message-bubble">It has a purple case with a blue stripe on the back</div>
+                        <div class="message-time">2:36 PM</div>
+                    </div>
+                </div>
+
+                <div class="message">
+                    <div class="message-avatar">JD</div>
+                    <div class="message-content">
+                        <div class="message-bubble">That's the one! I have it here</div>
+                        <div class="message-time">2:38 PM</div>
+                    </div>
+                </div>
+
+                <div class="message">
+                    <div class="message-avatar">JD</div>
+                    <div class="message-content">
+                        <div class="message-bubble">Yeah, I can meet you tomorrow at noon!</div>
+                        <div class="message-time">2:40 PM</div>
+                    </div>
+                </div>
+
+                <div class="message own">
+                    <div class="message-content">
+                        <div class="message-bubble">Perfect! Let's meet at the coffee shop near Main Street</div>
+                        <div class="message-time">2:41 PM</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <textarea class="message-input" placeholder="Type your message..." rows="1"></textarea>
+                    <button class="btn-send">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            const conversations = document.querySelectorAll('.conversation-item');
+
+            conversations.forEach(conv => {
+                const text = conv.textContent.toLowerCase();
+                conv.style.display = text.includes(query) ? 'flex' : 'none';
+            });
+        });
+
+        // Message input auto-resize
+        const messageInput = document.querySelector('.message-input');
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
+        // Send message
+        document.querySelector('.btn-send').addEventListener('click', function() {
+            const input = document.querySelector('.message-input');
+            const message = input.value.trim();
+
+            if (message) {
+                // Create new message element
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message own';
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-bubble">${escapeHtml(message)}</div>
+                        <div class="message-time">Just now</div>
+                    </div>
+                `;
+
+                // Add to messages
+                document.querySelector('.messages').appendChild(messageDiv);
+
+                // Scroll to bottom
+                document.querySelector('.messages').scrollTop = document.querySelector('.messages').scrollHeight;
+
+                // Clear input
+                input.value = '';
+                input.style.height = 'auto';
+            }
+        });
+
+        // Handle Enter key
+        document.querySelector('.message-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.querySelector('.btn-send').click();
+            }
+        });
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>
