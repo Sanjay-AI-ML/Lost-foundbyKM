@@ -6,7 +6,6 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 import json
 from lost_found_project.url_safety import log_blocked_url
-from lost_found_project.cyberaccess import _ACTIVE_QUARANTINES
 from audit.models import AuditLog
 
 
@@ -153,8 +152,13 @@ def reset_demo(request):
         deleted_count, _ = AuditLog.objects.all().delete()
 
         # Clear in-memory quarantine cache (active timers)
-        quarantine_count = len(_ACTIVE_QUARANTINES)
-        _ACTIVE_QUARANTINES.clear()
+        quarantine_count = 0
+        try:
+            from lost_found_project.cyberaccess import _ACTIVE_QUARANTINES
+            quarantine_count = len(_ACTIVE_QUARANTINES)
+            _ACTIVE_QUARANTINES.clear()
+        except ImportError:
+            pass  # If import fails, just skip quarantine clearing
 
         return JsonResponse({
             'success': True,

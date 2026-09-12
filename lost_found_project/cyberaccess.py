@@ -9,7 +9,7 @@ import time
 from typing import Any, Dict, Optional, Tuple
 from django.conf import settings
 from django.shortcuts import render
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 import requests
 
 logger = logging.getLogger("cyberaccess")
@@ -319,6 +319,24 @@ class CyberAccessSecurityMiddleware:
     def __call__(self, request: HttpRequest) -> HttpResponse:
         if CYBERACCESS_ENABLED and request.method in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
             path = request.path
+
+            # Hackathon bypass release: allows demo presenter to bypass cooldown immediately
+            if path == '/cyberaccess/bypass/' or request.GET.get('hackathon_bypass') == '1':
+                client_ip = get_client_ip(request)
+                subject = get_client_subject(request)
+                _ACTIVE_QUARANTINES.pop(subject, None)
+                _ACTIVE_QUARANTINES.pop(client_ip, None)
+                client = CyberAccessClient.get_instance()
+                try:
+                    client.session.post(
+                        f"{CYBERACCESS_API_URL}/hackathon/release",
+                        json={"subject": subject, "client_ip": client_ip},
+                        timeout=1.5,
+                    )
+                except Exception as e:
+                    logger.debug("Failed calling backend hackathon release: %s", e)
+                return HttpResponseRedirect('/?hackathon_cleared=1')
+
             # Skip static files and admin
             static_exts = ('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.map', '.mp4')
             is_static = any(path.endswith(ext) for ext in static_exts) or path.startswith('/static/') or path.startswith('/media/')
