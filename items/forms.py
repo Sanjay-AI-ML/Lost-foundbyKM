@@ -1,5 +1,7 @@
 from django import forms
+from django.core.exceptions import ValidationError
 from .models import Item, Category
+from lost_found_project.url_safety import check_content_for_urls, URLBlockedException
 
 
 class ItemForm(forms.ModelForm):
@@ -31,6 +33,46 @@ class ItemForm(forms.ModelForm):
         self.fields['contact_phone'].required = False
         self.fields['contact_email'].required = False
         self.fields['image'].required = False
+
+    def clean(self):
+        """Validate URLs in user-provided content."""
+        cleaned_data = super().clean()
+
+        # Check description for suspicious URLs
+        description = cleaned_data.get('description', '')
+        if description:
+            try:
+                is_safe, blocked_urls = check_content_for_urls(
+                    description,
+                    context='item_description'
+                )
+                if not is_safe and blocked_urls:
+                    raise ValidationError(
+                        f"Your item description contains unsafe links that are blocked: {blocked_urls[0]['reason']}"
+                    )
+            except URLBlockedException as e:
+                raise ValidationError(
+                    f"Your item description contains a blocked URL: {e.reason}"
+                )
+
+        # Check reward field for suspicious URLs
+        reward = cleaned_data.get('reward', '')
+        if reward:
+            try:
+                is_safe, blocked_urls = check_content_for_urls(
+                    reward,
+                    context='item_reward'
+                )
+                if not is_safe and blocked_urls:
+                    raise ValidationError(
+                        f"Your reward field contains unsafe links that are blocked: {blocked_urls[0]['reason']}"
+                    )
+            except URLBlockedException as e:
+                raise ValidationError(
+                    f"Your reward field contains a blocked URL: {e.reason}"
+                )
+
+        return cleaned_data
 
 
 class ItemSearchForm(forms.Form):

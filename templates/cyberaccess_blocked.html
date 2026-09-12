@@ -589,16 +589,34 @@
 
         // 2. Real-Time Quarantine Countdown & Auto-Release
         (function() {
-            let remaining = parseInt("{{ lockout_remaining_seconds|default:120 }}", 10);
-            if (isNaN(remaining) || remaining <= 0) {
-                remaining = 120;
+            // Absolute expiration timestamp anchor prevents timer resets upon page refresh
+            const serverExpiresAt = parseInt("{{ lockout_expires_at|default:0 }}", 10);
+            const storageKey = 'cyberaccess_lockout_' + encodeURIComponent("{{ subject|default:'client' }}");
+            const nowSec = Math.floor(Date.now() / 1000);
+
+            let expiresAt = serverExpiresAt > nowSec ? serverExpiresAt : parseInt(localStorage.getItem(storageKey) || '0', 10);
+            if (!expiresAt || expiresAt <= nowSec) {
+                const serverRem = parseInt("{{ lockout_remaining_seconds|default:120 }}", 10);
+                const duration = (serverRem > 0) ? serverRem : 120;
+                expiresAt = nowSec + duration;
             }
 
+            try {
+                localStorage.setItem(storageKey, String(expiresAt));
+            } catch(e) {}
+
+            function getRemainingSeconds() {
+                const currentSec = Math.floor(Date.now() / 1000);
+                return Math.max(0, expiresAt - currentSec);
+            }
+
+            let remaining = getRemainingSeconds();
             const formattedEl = document.getElementById('lockoutTimerFormatted');
             const secondsEl = document.getElementById('lockoutTimerSeconds');
             const statusIndicator = document.getElementById('lockdownStatusIndicator');
 
             function updateDisplay() {
+                remaining = getRemainingSeconds();
                 const m = Math.floor(remaining / 60);
                 const s = remaining % 60;
                 if (formattedEl) {
@@ -609,12 +627,16 @@
                 }
             }
 
+            // Immediately display initial remaining time
             updateDisplay();
 
             const interval = setInterval(() => {
-                remaining--;
+                remaining = getRemainingSeconds();
                 if (remaining <= 0) {
                     clearInterval(interval);
+                    try {
+                        localStorage.removeItem(storageKey);
+                    } catch(e) {}
                     if (formattedEl) {
                         formattedEl.textContent = '00 : 00';
                         formattedEl.style.color = '#10b981';

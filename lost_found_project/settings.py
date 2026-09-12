@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'items.apps.ItemsConfig',
     'claims.apps.ClaimsConfig',
     'notifications.apps.NotificationsConfig',
+    'audit.apps.AuditConfig',
 ]
 
 MIDDLEWARE = [
@@ -133,3 +134,6 @@ CYBERACCESS_API_KEY = os.environ.get('CYBERACCESS_API_KEY', 'dev_test_key')
 CYBERACCESS_FAIL_OPEN = os.environ.get('CYBERACCESS_FAIL_OPEN', 'true').lower() in ('true', '1', 'yes')
 CYBERACCESS_TIMEOUT = float(os.environ.get('CYBERACCESS_TIMEOUT', '2.0'))
 CYBERACCESS_CANARIES = os.environ.get('CYBERACCESS_CANARIES', '0,999999,canary_admin_vault').split(',')
+
+# URL Safety Defense Configuration
+URL_SAFETY_ENABLED = os.environ.get('URL_SAFETY_ENABLED', 'true').lower() in ('true', '1', 'yes')

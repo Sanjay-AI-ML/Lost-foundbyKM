@@ -1,0 +1,568 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNSAFE LINK BLOCKED - URL Safety Defense</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800;900&family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #07090e;
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            width: 100vw;
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Ambient Video Background Layer */
+        .threat-video-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .threat-video-layer video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.20;
+            filter: saturate(0.6) brightness(0.4) contrast(1.2);
+        }
+
+        .threat-video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at 50% 30%, rgba(35, 8, 12, 0.88) 0%, rgba(7, 9, 14, 0.98) 100%);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Top High-Priority Warning Ribbon */
+        .threat-hazard-ribbon {
+            position: relative;
+            z-index: 100;
+            background: linear-gradient(90deg, #7f1d1d 0%, #dc2626 50%, #7f1d1d 100%);
+            color: #ffffff;
+            padding: 10px 20px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 25px rgba(220, 38, 38, 0.5);
+            border-bottom: 1px solid rgba(254, 202, 202, 0.3);
+        }
+
+        .threat-hazard-ribbon i {
+            animation: warningPulse 1.2s infinite ease-in-out;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.25); opacity: 0.7; }
+        }
+
+        /* Main Takeover Content Viewport */
+        .takeover-viewport {
+            position: relative;
+            z-index: 20;
+            min-height: calc(100vh - 42px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px 60px 20px;
+        }
+
+        .takeover-card {
+            width: 100%;
+            max-width: 880px;
+            background: rgba(14, 17, 26, 0.94);
+            border: 2px solid #ef4444;
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(239, 68, 68, 0.35), 0 20px 60px rgba(0, 0, 0, 0.8);
+            padding: 42px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Scanline Accent Effect */
+        .takeover-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #ef4444, #f59e0b, #ef4444);
+            box-shadow: 0 0 15px #ef4444;
+        }
+
+        /* Shield Icon */
+        .shield-beacon {
+            width: 76px;
+            height: 76px;
+            border-radius: 20px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 2px solid #ef4444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            color: #ef4444;
+            box-shadow: 0 0 35px rgba(239, 68, 68, 0.45);
+            flex-shrink: 0;
+        }
+
+        .takeover-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+            padding-bottom: 24px;
+            margin-bottom: 24px;
+        }
+
+        .takeover-header-text h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 26px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+            margin-top: 4px;
+        }
+
+        .takeover-tag {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            color: #f87171;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .takeover-score-badge {
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .score-pill {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: 999px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+            display: inline-block;
+        }
+
+        /* Alert Description Banner */
+        .alert-statement {
+            background: rgba(239, 68, 68, 0.09);
+            border-left: 4px solid #ef4444;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #fca5a5;
+        }
+
+        /* URL Display Box */
+        .url-display-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+        }
+
+        .url-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .url-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #f87171;
+            word-break: break-all;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        /* Reason for Block */
+        .block-reason-box {
+            background: rgba(220, 38, 38, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .reason-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #f87171;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .reason-text {
+            font-size: 14px;
+            color: #fca5a5;
+            line-height: 1.6;
+        }
+
+        /* Metadata Grid */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .meta-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .meta-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+
+        .meta-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        /* Signals & Explanations Section */
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            margin-top: 16px;
+        }
+
+        .signals-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .signal-pill {
+            background: rgba(239, 68, 68, 0.16);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 6px;
+        }
+
+        .explanation-list {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin-bottom: 26px;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+        }
+
+        /* Perimeter Status Footer */
+        .takeover-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .incident-ref code {
+            color: #fca5a5;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .lockdown-seal {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(239, 68, 68, 0.12);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .meta-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .takeover-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .takeover-score-badge {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top High-Priority Hazard Ribbon -->
+    <div class="threat-hazard-ribbon">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>UNSAFE LINK BLOCKED &bull; URL SAFETY DEFENSE SYSTEM &bull; MALICIOUS CONTENT INTERCEPTED</span>
+        <i class="fa-solid fa-triangle-exclamation"></i>
+    </div>
+
+    <!-- Ambient Motion Video Layer -->
+    <div class="threat-video-layer">
+        <video autoplay muted loop playsinline preload="auto">
+            <source src="{% static 'videos/background.mp4' %}" type="video/mp4">
+        </video>
+        <div class="threat-video-overlay"></div>
+    </div>
+
+    <!-- Full-Screen Takeover Viewport -->
+    <div class="takeover-viewport">
+        <div class="takeover-card">
+            <!-- Header -->
+            <div class="takeover-header">
+                <div class="shield-beacon">
+                    <i class="fa-solid fa-link-slash"></i>
+                </div>
+                <div class="takeover-header-text">
+                    <div class="takeover-tag">
+                        <i class="fa-solid fa-exclamation-circle"></i>
+                        <span>URL Safety Protection Active</span>
+                    </div>
+                    <h1>Unsafe Link Detected & Blocked</h1>
+                </div>
+                <div class="takeover-score-badge">
+                    <span class="score-pill">
+                        RISK: {{ severity|upper|default:"MEDIUM" }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Threat Statement -->
+            <div class="alert-statement">
+                <strong>Security Alert - Malicious URL Intercepted:</strong>
+                Our automated URL safety scanner detected a potentially dangerous link that does not meet our security standards. This link has been blocked to protect you and other users from phishing, malware, or unsafe content.
+            </div>
+
+            <!-- Blocked URL Display -->
+            <div class="url-display-box">
+                <div class="url-label"><i class="fa-solid fa-link"></i> Blocked URL</div>
+                <div class="url-value">{{ sanitized_url }}</div>
+            </div>
+
+            <!-- Block Reason -->
+            <div class="block-reason-box">
+                <div class="reason-label">
+                    <i class="fa-solid fa-ban"></i>
+                    Why This Link Was Blocked
+                </div>
+                <div class="reason-text">
+                    {{ reason }}
+                </div>
+            </div>
+
+            <!-- Metadata Panel -->
+            <div class="meta-grid">
+                <div class="meta-box">
+                    <div class="meta-label">Detection Time</div>
+                    <div class="meta-value">
+                        {{ timestamp }}
+                    </div>
+                </div>
+                <div class="meta-box">
+                    <div class="meta-label">Threat Category</div>
+                    <div class="meta-value">
+                        {{ category|default:"Suspicious Content" }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tripped Security Signals -->
+            <div class="section-title">Security Signals Triggered</div>
+            <div class="signals-row">
+                {% if signals %}
+                    {% for sig in signals %}
+                        <span class="signal-pill">{{ sig }}</span>
+                    {% endfor %}
+                {% else %}
+                    <span class="signal-pill">malicious_url</span>
+                    <span class="signal-pill">content_blocked</span>
+                {% endif %}
+            </div>
+
+            <!-- Explanations -->
+            <div class="section-title">What This Means</div>
+            <ul class="explanation-list">
+                {% if explanations %}
+                    {% for exp in explanations %}
+                        <li>{{ exp }}</li>
+                    {% endfor %}
+                {% else %}
+                    <li>The URL you tried to use has been identified as potentially unsafe.</li>
+                    <li>This blocking action has been logged and reported to our security team.</li>
+                    <li>If you believe this is a mistake, please contact our support team.</li>
+                {% endif %}
+            </ul>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                {% if return_url %}
+                    <a href="{{ return_url }}" class="btn btn-secondary">
+                        <i class="fa-solid fa-arrow-left"></i> Go Back
+                    </a>
+                {% else %}
+                    <button onclick="history.back()" class="btn btn-secondary">
+                        <i class="fa-solid fa-arrow-left"></i> Go Back
+                    </button>
+                {% endif %}
+                <a href="/" class="btn btn-primary">
+                    <i class="fa-solid fa-home"></i> Return to Home
+                </a>
+            </div>
+
+            <!-- Perimeter Status Footer -->
+            <div class="takeover-footer">
+                <div class="incident-ref">
+                    Incident ID: <code>{{ incident_id|default:"URL_BLOCK_DEFENSE" }}</code>
+                </div>
+                <div class="lockdown-seal">
+                    <i class="fa-solid fa-shield-check"></i>
+                    <span>Protected &bull; Security Event Logged</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Prevent back button navigation if needed
+        (function() {
+            window.history.replaceState(null, document.title, window.location.href);
+            window.history.pushState(null, document.title, window.location.href);
+        })();
+    </script>
+</body>
+</html>

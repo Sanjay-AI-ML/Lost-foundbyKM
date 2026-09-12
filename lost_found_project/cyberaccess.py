@@ -168,6 +168,56 @@ class CyberAccessClient:
             logger.debug("Error checking lockout status for %s: %s", subject, e)
         return {"is_locked": False, "lockout_remaining_seconds": 0, "strike_count": 0}
 
+    def log_timer_event(self, subject: str, remaining_seconds: int, expires_at: Optional[int] = None, strike_count: int = 1, reason: str = "Quarantine cooldown active"):
+        """Logs quarantine timer countdown progress into the SOC audit timeline."""
+        if not CYBERACCESS_ENABLED:
+            return
+        try:
+            self.session.post(
+                f"{CYBERACCESS_API_URL}/v1/audit/timer-log",
+                json={
+                    "subject": subject,
+                    "remaining_seconds": int(remaining_seconds),
+                    "expires_at": expires_at,
+                    "strike_count": int(strike_count),
+                    "reason": reason,
+                },
+                timeout=1.0,
+            )
+        except Exception as e:
+            logger.debug("Error logging timer audit for %s: %s", subject, e)
+
+
+# Global in-memory quarantine cache to guarantee timer monotonicity across page refreshes
+_ACTIVE_QUARANTINES: dict[str, dict] = {}
+
+
+def get_or_register_quarantine(subject: str, remaining_seconds: int = 120, expires_at: Optional[int] = None, strike_count: int = 1) -> dict:
+    """Retrieves or registers an absolute quarantine expiration to prevent timer resets on refresh."""
+    now = time.time()
+    existing = _ACTIVE_QUARANTINES.get(subject)
+    if existing and existing["expires_at"] > now:
+        rem = max(0, int(existing["expires_at"] - now))
+        existing["remaining_seconds"] = rem
+        return existing
+
+    if expires_at and expires_at > now:
+        target_exp = int(expires_at)
+        rem = max(0, int(target_exp - now))
+    else:
+        rem = max(1, remaining_seconds)
+        target_exp = int(now + rem)
+
+    entry = {
+        "subject": subject,
+        "expires_at": target_exp,
+        "remaining_seconds": rem,
+        "strike_count": strike_count,
+        "started_at": int(now),
+    }
+    _ACTIVE_QUARANTINES[subject] = entry
+    return entry
+
 
 def get_client_ip(request: HttpRequest) -> str:
     """Extracts only the client IP address (no usernames).
@@ -282,13 +332,40 @@ class CyberAccessSecurityMiddleware:
                 # If subject or client IP is under active quarantine cooldown, take over the entire website!
                 # Quarantined attackers cannot navigate to home, login, or any other endpoint.
                 client = CyberAccessClient.get_instance()
-                lockout = client.get_lockout_status(subject)
-                if not lockout.get("is_locked") and client_ip != subject:
-                    lockout = client.get_lockout_status(client_ip)
+                now_ts = time.time()
+                local_q = _ACTIVE_QUARANTINES.get(subject) or _ACTIVE_QUARANTINES.get(client_ip)
 
-                if lockout.get("is_locked"):
-                    rem_sec = int(lockout.get("lockout_remaining_seconds", 120) or 120)
-                    strike_count = lockout.get("strike_count", 1)
+                if local_q and local_q["expires_at"] > now_ts:
+                    is_locked = True
+                    expires_at = local_q["expires_at"]
+                    rem_sec = max(0, int(expires_at - now_ts))
+                    strike_count = local_q.get("strike_count", 1)
+                else:
+                    lockout = client.get_lockout_status(subject)
+                    if not lockout.get("is_locked") and client_ip != subject:
+                        lockout = client.get_lockout_status(client_ip)
+
+                    if lockout.get("is_locked"):
+                        is_locked = True
+                        expires_at = int(lockout.get("lockout_expires_at") or (now_ts + int(lockout.get("lockout_remaining_seconds", 120))))
+                        rem_sec = max(0, int(expires_at - now_ts))
+                        strike_count = lockout.get("strike_count", 1)
+                        get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
+                    else:
+                        is_locked = False
+                        expires_at = None
+                        rem_sec = 0
+                        strike_count = 0
+
+                if is_locked and rem_sec > 0:
+                    # Save timer event to audit timeline so refresh and navigation are logged
+                    client.log_timer_event(
+                        subject=subject,
+                        remaining_seconds=rem_sec,
+                        expires_at=expires_at,
+                        strike_count=strike_count,
+                        reason="Page navigation or refresh quarantined by perimeter defense"
+                    )
                     context = {
                         "subject": subject,
                         "decision": "block",
@@ -303,6 +380,7 @@ class CyberAccessSecurityMiddleware:
                         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
                         "contact_email": "security@company.com",
                         "lockout_remaining_seconds": rem_sec,
+                        "lockout_expires_at": expires_at,
                         "strike_count": strike_count,
                         "lockout_type": f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m",
                     }
@@ -334,6 +412,16 @@ class CyberAccessSecurityMiddleware:
                         # If blocked at entry point, show blocked page BEFORE rendering website
                         if action == "block":
                             rem_sec = details.get("lockout_remaining_s", 120) or 120
+                            expires_at = details.get("lockout_expires_at") or int(now_ts + rem_sec)
+                            rem_sec = max(0, int(expires_at - now_ts))
+                            get_or_register_quarantine(client_ip, rem_sec, expires_at, 1)
+                            client.log_timer_event(
+                                subject=client_ip,
+                                remaining_seconds=rem_sec,
+                                expires_at=expires_at,
+                                strike_count=1,
+                                reason="Early object check blocked access"
+                            )
                             context = {
                                 "subject": client_ip,
                                 "decision": "block",
@@ -344,6 +432,7 @@ class CyberAccessSecurityMiddleware:
                                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
                                 "contact_email": "security@company.com",
                                 "lockout_remaining_seconds": rem_sec,
+                                "lockout_expires_at": expires_at,
                                 "strike_count": 1,
                                 "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
                             }
@@ -377,42 +466,24 @@ class CyberAccessSecurityMiddleware:
                         subject=client_ip,
                     )
 
-                    # Always show blocked page for 404s on protected resources (security by obscurity)
-                    # Don't reveal that resource exists or doesn't exist
+                    now = time.time()
+                    q_entry = get_or_register_quarantine(client_ip, 120)
+                    rem_sec = q_entry["remaining_seconds"]
+                    expires_at = q_entry["expires_at"]
 
-                    # Check if subject is under lockout
-                    lockout_info = {
-                        "strike_count": 0,
-                        "is_locked": False,
-                        "lockout_remaining_seconds": 0,
-                        "lockout_expires_at": None,
-                        "lockout_type": None
-                    }
-
-                    try:
-                        # Try to get lockout status
-                        now = time.time()
-                        from bola_benchmark import engine, DEMO_TENANT_ID
-                        strike_count = engine.get_strike_count(DEMO_TENANT_ID, client_ip, now)
-
-                        if strike_count >= 1:
-                            # Get lockout expiration timestamp
-                            blocked_until = engine.blocked_until(DEMO_TENANT_ID, client_ip)
-                            remaining = max(0, int(blocked_until - now))
-                            lockout_info = {
-                                "strike_count": min(strike_count, 3),
-                                "is_locked": remaining > 0,
-                                "lockout_remaining_seconds": remaining,
-                                "lockout_expires_at": int(blocked_until),
-                                "lockout_type": "soft_lockout_2m" if strike_count == 1 else "hard_lockout_30m"
-                            }
-                    except Exception as e:
-                        logger.debug(f"Could not get lockout info: {e}")
+                    client = CyberAccessClient.get_instance()
+                    client.log_timer_event(
+                        subject=client_ip,
+                        remaining_seconds=rem_sec,
+                        expires_at=expires_at,
+                        strike_count=1,
+                        reason="Object enumeration probe on non-existent record"
+                    )
 
                     context = {
                         "subject": client_ip,
-                        "decision": action or "block",
-                        "score": details.get("score", 75.0),  # High score for enumeration attempts
+                        "decision": "block",
+                        "score": details.get("score", 75.0),
                         "category": details.get("category", "Suspicious Activity"),
                         "signals": details.get("signals", ["object_enumeration", "resource_discovery"]),
                         "explanations": details.get("explanations", [
@@ -421,28 +492,50 @@ class CyberAccessSecurityMiddleware:
                         ]),
                         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
                         "contact_email": "security@company.com",
-                        **lockout_info  # Add lockout info to context
+                        "strike_count": 1,
+                        "is_locked": True,
+                        "lockout_remaining_seconds": rem_sec,
+                        "lockout_expires_at": expires_at,
+                        "lockout_type": "soft_lockout_2m",
                     }
-                    # Return blocked page instead of 404 error message
                     return render_cyberaccess_blocked(request, context, status=403)
         return response
 
     def process_exception(self, request: HttpRequest, exception: Exception):
         if isinstance(exception, CyberAccessBOLAException):
-            is_blocked = (exception.decision == "block")
-            rem_sec = int(exception.payload.get("lockout_remaining_s", 0) or 0)
-            if is_blocked and rem_sec <= 0:
-                rem_sec = 120
-            elif not is_blocked and rem_sec <= 0:
-                rem_sec = 0
+            subject = get_client_subject(request)
+            client_ip = get_client_ip(request)
+            now_ts = time.time()
 
-            strike_count = exception.payload.get("strike_count")
-            if not strike_count:
-                strike_count = 1 if is_blocked else 0
+            # Monotonic quarantine calculation
+            local_q = _ACTIVE_QUARANTINES.get(subject) or _ACTIVE_QUARANTINES.get(client_ip)
+            if local_q and local_q["expires_at"] > now_ts:
+                expires_at = local_q["expires_at"]
+                rem_sec = max(0, int(expires_at - now_ts))
+                strike_count = local_q.get("strike_count", 1)
+            else:
+                raw_rem = int(exception.payload.get("lockout_remaining_s", 0) or 0)
+                if raw_rem <= 0:
+                    raw_rem = 120
+                expires_at = int(exception.payload.get("lockout_expires_at") or (now_ts + raw_rem))
+                rem_sec = max(0, int(expires_at - now_ts))
+                strike_count = int(exception.payload.get("strike_count") or 1)
+                get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
+                if client_ip != subject:
+                    get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
+
+            client = CyberAccessClient.get_instance()
+            client.log_timer_event(
+                subject=subject,
+                remaining_seconds=rem_sec,
+                expires_at=expires_at,
+                strike_count=strike_count,
+                reason="Object enumeration probe intercepted"
+            )
 
             context = {
-                "subject": get_client_subject(request),
-                "decision": exception.decision,
+                "subject": subject,
+                "decision": "block",
                 "score": exception.score,
                 "category": exception.category,
                 "signals": exception.signals,
@@ -450,6 +543,7 @@ class CyberAccessSecurityMiddleware:
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
                 "contact_email": "security@company.com",
                 "lockout_remaining_seconds": rem_sec,
+                "lockout_expires_at": expires_at,
                 "strike_count": strike_count,
                 "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
             }
