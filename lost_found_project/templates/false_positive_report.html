@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report False Positive - Lost & Found</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .grid-overlay {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+            background-size: 100px 100px;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #00bfff, #0099cc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            color: #94a3b8;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* Form Card */
+        .form-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 24px;
+        }
+
+        .form-section {
+            margin-bottom: 32px;
+        }
+
+        .form-section:last-of-type {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #00bfff;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #e2e8f0;
+            margin-bottom: 8px;
+        }
+
+        .required {
+            color: #ef4444;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="date"],
+        input[type="time"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.5);
+            color: #e2e8f0;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="date"]:focus,
+        input[type="time"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: rgba(0, 191, 255, 0.5);
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 3px rgba(0, 191, 255, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        select option {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        /* Checkbox Group */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: #00bfff;
+            flex-shrink: 0;
+        }
+
+        .checkbox-item label {
+            margin-bottom: 0;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(0, 191, 255, 0.1);
+            border: 1px solid rgba(0, 191, 255, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .info-box-title {
+            font-weight: 600;
+            color: #00bfff;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-box-content {
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+
+        /* Buttons */
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00bfff, #0099cc);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 191, 255, 0.3);
+            flex: 1;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 191, 255, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(148, 163, 184, 0.1);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(148, 163, 184, 0.15);
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            line-height: 1.5;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.15);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .alert-info {
+            background: rgba(0, 191, 255, 0.15);
+            color: #7dd3fc;
+            border: 1px solid rgba(0, 191, 255, 0.3);
+        }
+
+        /* Footer */
+        .footer-text {
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .footer-text a {
+            color: #00bfff;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-text a:hover {
+            color: #22d3ee;
+            text-decoration: underline;
+        }
+
+        /* Loading State */
+        .loading-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .form-card {
+                padding: 24px;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0;
+            }
+
+            .form-card {
+                padding: 20px;
+                border-radius: 8px;
+            }
+
+            .page-title {
+                font-size: 20px;
+            }
+
+            .header-icon {
+                font-size: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-overlay"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="page-header">
+            <div class="header-icon">📋</div>
+            <h1 class="page-title">Report False Positive</h1>
+            <p class="page-subtitle">Was your access blocked by mistake? Help us improve our security system by reporting false positives.</p>
+        </div>
+
+        <!-- Form Card -->
+        <div class="form-card">
+            <!-- Alert Messages -->
+            <div class="alert alert-error" id="errorAlert"></div>
+            <div class="alert alert-success" id="successAlert"></div>
+            <div class="alert alert-info" id="infoAlert"></div>
+
+            <!-- Info Box -->
+            <div class="info-box">
+                <div class="info-box-title">
+                    <span>💡</span>
+                    How This Helps
+                </div>
+                <div class="info-box-content">
+                    Your feedback helps CyberAccess BOLA Defense improve its machine learning models. False positive reports are reviewed within 24 hours and may result in your account being unblocked immediately.
+                </div>
+            </div>
+
+            <!-- Report Form -->
+            <form id="reportForm" method="POST" novalidate>
+                {% csrf_token %}
+
+                <!-- Section 1: Incident Details -->
+                <div class="form-section">
+                    <div class="section-title">📌 Incident Details</div>
+
+                    <div class="form-group">
+                        <label for="blockTime">When were you blocked? <span class="required">*</span></label>
+                        <input type="date" id="blockTime" name="block_date" required>
+                        <div class="help-text">Approximate date of the blocking incident</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="blockType">Type of Block <span class="required">*</span></label>
+                        <select id="blockType" name="block_type" required>
+                            <option value="">-- Select block type --</option>
+                            <option value="login">Login Attempt Blocked</option>
+                            <option value="browsing">Access Blocked While Browsing</option>
+                            <option value="transaction">Transaction Blocked</option>
+                            <option value="api">API Request Blocked</option>
+                            <option value="other">Other / Not Sure</option>
+                        </select>
+                        <div class="help-text">What action triggered the block?</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="riskScore">Risk Score Shown <span class="required">*</span></label>
+                        <input type="text" id="riskScore" name="risk_score" placeholder="e.g., 85/100" required>
+                        <div class="help-text">Enter the risk score that was displayed (if visible)</div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Context -->
+                <div class="form-section">
+                    <div class="section-title">🌍 Context Information</div>
+
+                    <div class="form-group">
+                        <label for="location">Location <span class="required">*</span></label>
+                        <input type="text" id="location" name="location" placeholder="e.g., New York, NY" required>
+                        <div class="help-text">Where you were when blocked (City, Country)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="device">Device/Browser <span class="required">*</span></label>
+                        <input type="text" id="device" name="device" placeholder="e.g., Chrome on MacBook Pro" required>
+                        <div class="help-text">Type of device and browser you were using</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="behavior">Why This Wasn't Suspicious <span class="required">*</span></label>
+                        <textarea id="behavior" name="behavior" placeholder="Explain why this activity was legitimate..." required></textarea>
+                        <div class="help-text">Describe your normal behavior pattern for this type of activity</div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Evidence -->
+                <div class="form-section">
+                    <div class="section-title">✅ Evidence</div>
+
+                    <div class="form-group">
+                        <label>Did you recognize this activity? <span class="required">*</span></label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="radio" id="activity-yes" name="recognized_activity" value="yes" required>
+                                <label for="activity-yes">Yes, I performed this action myself</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="radio" id="activity-no" name="recognized_activity" value="no" required>
+                                <label for="activity-no">No, I did not perform this action</label>
+                            </div>
+                        </div>
+                        <div class="help-text">Confirm whether you recognize the blocked activity</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="referenceid">Reference/Incident ID (if available)</label>
+                        <input type="text" id="referenceid" name="reference_id" placeholder="e.g., REF-20260912-12345">
+                        <div class="help-text">If you received a reference ID from the block message, enter it here</div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Additional Info -->
+                <div class="form-section">
+                    <div class="section-title">📝 Additional Information</div>
+
+                    <div class="form-group">
+                        <label for="additionalInfo">Anything else you'd like us to know?</label>
+                        <textarea id="additionalInfo" name="additional_info" placeholder="(Optional) Any other details..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="contact_me" value="yes">
+                            <span>I'd like to be contacted if there are follow-up questions</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="button-group">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <span id="btnText">Submit Report</span>
+                    </button>
+                    <a href="/dashboard/" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-text">
+            <p>Your report is confidential and reviewed by our security team.</p>
+            <p>For urgent issues, <a href="mailto:security@example.com">contact our security team</a> directly.</p>
+        </div>
+    </div>
+
+    <script>
+        // Form submission
+        document.getElementById('reportForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const form = document.getElementById('reportForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+
+            // Validation
+            const blockDate = document.getElementById('blockTime').value;
+            const blockType = document.getElementById('blockType').value;
+            const riskScore = document.getElementById('riskScore').value;
+            const location = document.getElementById('location').value;
+            const device = document.getElementById('device').value;
+            const behavior = document.getElementById('behavior').value;
+            const recognizedActivity = document.querySelector('input[name="recognized_activity"]:checked');
+
+            if (!blockDate || !blockType || !riskScore || !location || !device || !behavior || !recognizedActivity) {
+                showAlert('errorAlert', 'Please fill in all required fields');
+                return;
+            }
+
+            // Disable button and show loading state
+            submitBtn.disabled = true;
+            btnText.innerHTML = '<span class="loading-spinner"></span> Submitting...';
+
+            try {
+                // Submit form
+                const formData = new FormData(form);
+                const response = await fetch(window.location.pathname, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        showAlert('successAlert', 'Report submitted successfully! Our team will review it within 24 hours.');
+                        form.reset();
+                        setTimeout(() => {
+                            window.location.href = '/dashboard/';
+                        }, 2000);
+                    } else {
+                        showAlert('errorAlert', data.error || 'Failed to submit report. Please try again.');
+                        submitBtn.disabled = false;
+                        btnText.textContent = 'Submit Report';
+                    }
+                } else {
+                    throw new Error('Submission failed');
+                }
+            } catch (error) {
+                showAlert('errorAlert', 'An error occurred. Please try again.');
+                submitBtn.disabled = false;
+                btnText.textContent = 'Submit Report';
+            }
+        });
+
+        // Show alert helper
+        function showAlert(alertId, message) {
+            const alert = document.getElementById(alertId);
+            alert.textContent = message;
+            alert.classList.add('show');
+
+            // Hide other alerts
+            document.getElementById('errorAlert').classList.toggle('show', alertId === 'errorAlert');
+            document.getElementById('successAlert').classList.toggle('show', alertId === 'successAlert');
+            document.getElementById('infoAlert').classList.toggle('show', alertId === 'infoAlert');
+
+            // Auto-hide success messages
+            if (alertId === 'successAlert') {
+                setTimeout(() => alert.classList.remove('show'), 2000);
+            }
+        }
+
+        // Show any server-side error
+        {% if error %}
+            showAlert('errorAlert', '{{ error|safe }}');
+        {% endif %}
+
+        // Focus first field
+        document.getElementById('blockTime').focus();
+    </script>
+</body>
+</html>
