@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sign in to your Lost & Found account">
+    <title>Sign In - Lost & Found</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1e293b;
+            padding: 20px;
+        }
+
+        .grid-overlay {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+            background-size: 100px 100px;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15),
+                        0 0 1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #00bfff 0%, #0099cc 100%);
+            padding: 40px 32px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: float 20s linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .logo {
+            position: relative;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .logo svg {
+            width: 32px;
+            height: 32px;
+            color: white;
+        }
+
+        .header-title {
+            position: relative;
+            z-index: 1;
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .header-subtitle {
+            position: relative;
+            z-index: 1;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .card-body {
+            padding: 40px 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group:last-of-type {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            background: #f8fafc;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #00bfff;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(0, 191, 255, 0.1);
+        }
+
+        input[type="text"]:disabled,
+        input[type="email"]:disabled,
+        input[type="password"]:disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #64748b;
+            padding: 4px 8px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease;
+        }
+
+        .password-toggle:hover {
+            color: #00bfff;
+        }
+
+        .form-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            font-size: 13px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #00bfff;
+        }
+
+        .remember-me label {
+            margin: 0;
+            text-transform: none;
+            font-weight: 400;
+            letter-spacing: normal;
+            cursor: pointer;
+        }
+
+        .forgot-password {
+            color: #00bfff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .forgot-password:hover {
+            color: #0099cc;
+            text-decoration: underline;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00bfff 0%, #0099cc 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 191, 255, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 191, 255, 0.4);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            line-height: 1.5;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .alert-info {
+            background: #cffafe;
+            color: #164e63;
+            border: 1px solid #a5f3fc;
+        }
+
+        .divider {
+            margin: 24px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .divider-text {
+            position: relative;
+            display: inline-block;
+            background: white;
+            padding: 0 12px;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .card-footer {
+            padding: 24px 32px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .signup-link {
+            font-size: 13px;
+            color: #475569;
+        }
+
+        .signup-link a {
+            color: #00bfff;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+
+        .signup-link a:hover {
+            color: #0099cc;
+            text-decoration: underline;
+        }
+
+        .security-notice {
+            margin-top: 24px;
+            padding: 12px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #0c4a6e;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .security-notice strong {
+            color: #0284c7;
+        }
+
+        @media (max-width: 480px) {
+            .card-header {
+                padding: 32px 24px;
+            }
+
+            .card-body {
+                padding: 32px 24px;
+            }
+
+            .card-footer {
+                padding: 20px 24px;
+            }
+
+            .header-title {
+                font-size: 24px;
+            }
+
+            .btn {
+                padding: 11px 20px;
+                font-size: 13px;
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-overlay"></div>
+
+    <div class="container">
+        <div class="card">
+            <!-- Header -->
+            <div class="card-header">
+                <div class="logo">
+                    <svg fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                    </svg>
+                </div>
+                <h1 class="header-title">Lost & Found</h1>
+                <p class="header-subtitle">Welcome Back</p>
+            </div>
+
+            <!-- Body -->
+            <div class="card-body">
+                <!-- Alert Messages -->
+                <div class="alert alert-error" id="errorAlert"></div>
+                <div class="alert alert-success" id="successAlert"></div>
+                <div class="alert alert-info" id="infoAlert"></div>
+
+                <!-- Login Form -->
+                <form id="loginForm" method="POST" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Username/Email Field -->
+                    <div class="form-group">
+                        <label for="username">Username or Email</label>
+                        <div class="input-wrapper">
+                            <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                placeholder="Enter your username or email"
+                                required
+                                autocomplete="username"
+                                {% if username %}value="{{ username }}"{% endif %}
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="input-wrapper">
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Enter your password"
+                                required
+                                autocomplete="current-password"
+                            >
+                            <button type="button" class="password-toggle" onclick="togglePassword()" title="Show/hide password">
+                                <span id="toggleIcon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Footer (Remember Me + Forgot Password) -->
+                    <div class="form-footer">
+                        <div class="remember-me">
+                            <input
+                                type="checkbox"
+                                id="remember"
+                                name="remember"
+                                value="on"
+                            >
+                            <label for="remember">Remember me</label>
+                        </div>
+                        <a href="/password/reset/" class="forgot-password">Forgot Password?</a>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <span id="btnText">Sign In</span>
+                    </button>
+                </form>
+
+                <!-- Security Notice -->
+                <div class="security-notice">
+                    <strong>🔒 Secure:</strong> Your login is encrypted and protected by CyberAccess BOLA Defense
+                </div>
+
+                <!-- Divider -->
+                <div class="divider">
+                    <span class="divider-text">New to Lost & Found?</span>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="card-footer">
+                <p class="signup-link">
+                    Don't have an account? <a href="/register/">Create one now</a>
+                </p>
+                <p style="margin-top: 12px; font-size: 11px; color: #94a3b8;">
+                    By signing in, you agree to our <a href="/terms/" style="color: #0284c7; text-decoration: none;">Terms of Service</a>
+                    and <a href="/privacy/" style="color: #0284c7; text-decoration: none;">Privacy Policy</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Password visibility toggle
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.textContent = '👁️';
+            }
+        }
+
+        // Form submission
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
+
+            // Validation
+            if (!username || !password) {
+                showAlert('errorAlert', 'Please enter both username and password');
+                return;
+            }
+
+            if (password.length < 6) {
+                showAlert('errorAlert', 'Password must be at least 6 characters');
+                return;
+            }
+
+            // Disable button and show loading state
+            submitBtn.disabled = true;
+            btnText.innerHTML = '<span class="loading-spinner"></span> Signing In...';
+
+            try {
+                // Submit form (will redirect on success)
+                const formData = new FormData(document.getElementById('loginForm'));
+                const response = await fetch(window.location.pathname, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        showAlert('successAlert', 'Sign in successful! Redirecting...');
+                        setTimeout(() => {
+                            window.location.href = data.redirect || '/dashboard/';
+                        }, 1000);
+                    } else {
+                        showAlert('errorAlert', data.error || 'Sign in failed. Please try again.');
+                        submitBtn.disabled = false;
+                        btnText.textContent = 'Sign In';
+                    }
+                } else if (response.status === 401) {
+                    showAlert('errorAlert', 'Invalid username or password');
+                    submitBtn.disabled = false;
+                    btnText.textContent = 'Sign In';
+                } else {
+                    throw new Error('Sign in failed');
+                }
+            } catch (error) {
+                showAlert('errorAlert', 'An error occurred. Please try again.');
+                submitBtn.disabled = false;
+                btnText.textContent = 'Sign In';
+            }
+        });
+
+        // Show alert helper
+        function showAlert(alertId, message) {
+            const alert = document.getElementById(alertId);
+            alert.textContent = message;
+            alert.classList.add('show');
+
+            // Hide other alerts
+            document.getElementById('errorAlert').classList.toggle('show', alertId === 'errorAlert');
+            document.getElementById('successAlert').classList.toggle('show', alertId === 'successAlert');
+            document.getElementById('infoAlert').classList.toggle('show', alertId === 'infoAlert');
+
+            // Auto-hide success messages
+            if (alertId === 'successAlert') {
+                setTimeout(() => alert.classList.remove('show'), 2000);
+            }
+        }
+
+        // Show any server-side error
+        {% if error %}
+            showAlert('errorAlert', '{{ error|safe }}');
+        {% endif %}
+
+        // Focus first field
+        document.getElementById('username').focus();
+
+        // Clear alerts on input
+        document.getElementById('username').addEventListener('focus', () => {
+            document.getElementById('errorAlert').classList.remove('show');
+        });
+        document.getElementById('password').addEventListener('focus', () => {
+            document.getElementById('errorAlert').classList.remove('show');
+        });
+    </script>
+</body>
+</html>
