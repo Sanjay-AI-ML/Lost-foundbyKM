@@ -6,6 +6,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 import json
 from lost_found_project.url_safety import log_blocked_url
+from lost_found_project.cyberaccess import _ACTIVE_QUARANTINES
 from audit.models import AuditLog
 
 
@@ -145,16 +146,21 @@ def trigger_attack(request):
 @require_http_methods(["POST"])
 def reset_demo(request):
     """
-    Reset everything: clear audit timeline and demo state
+    Reset everything: clear audit timeline, quarantine cache, and demo state
     """
     try:
-        # Delete all audit logs
+        # Delete all audit logs from database
         deleted_count, _ = AuditLog.objects.all().delete()
+
+        # Clear in-memory quarantine cache (active timers)
+        quarantine_count = len(_ACTIVE_QUARANTINES)
+        _ACTIVE_QUARANTINES.clear()
 
         return JsonResponse({
             'success': True,
-            'message': f'Reset complete: {deleted_count} audit log entries deleted',
+            'message': f'Reset complete: {deleted_count} audit logs, {quarantine_count} quarantine timers cleared',
             'audit_logs_cleared': deleted_count,
+            'quarantine_timers_cleared': quarantine_count,
         })
 
     except Exception as e:
