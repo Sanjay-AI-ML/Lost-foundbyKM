@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Lost & Found</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            text-decoration: none;
+            color: #00bfff;
+        }
+
+        .nav-right {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00bfff, #0099cc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+
+        .user-details {
+            text-align: right;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: #00bfff;
+            font-size: 14px;
+        }
+
+        .user-status {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: #94a3b8;
+            margin-bottom: 40px;
+        }
+
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        /* Card Styles */
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(0, 191, 255, 0.4);
+            background: rgba(30, 41, 59, 0.95);
+        }
+
+        /* Feature 1: BOLA Defense Status */
+        .status-card {
+            grid-column: 1;
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .status-icon {
+            font-size: 28px;
+        }
+
+        .status-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00bfff;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 15px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .status-badge.protected {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .status-badge.at-risk {
+            background: rgba(251, 146, 60, 0.15);
+            color: #fb923c;
+            border: 1px solid rgba(251, 146, 60, 0.3);
+        }
+
+        .status-badge.blocked {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-indicator.protected {
+            background: #22c55e;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+        }
+
+        .status-indicator.at-risk {
+            background: #fb923c;
+            box-shadow: 0 0 8px rgba(251, 146, 60, 0.6);
+        }
+
+        .status-indicator.blocked {
+            background: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+        }
+
+        .status-details {
+            font-size: 12px;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        .status-detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .status-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #64748b;
+        }
+
+        .status-value {
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        /* Feature 2: Risk Indicator */
+        .risk-card {
+            grid-column: 1;
+        }
+
+        .risk-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00bfff;
+            margin-bottom: 16px;
+        }
+
+        .risk-score-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .risk-score-big {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            color: #22c55e;
+        }
+
+        .risk-score-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #94a3b8;
+        }
+
+        .risk-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .risk-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #10b981);
+            width: 15%;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+
+        .risk-bar-fill.medium {
+            background: linear-gradient(90deg, #fb923c, #f97316);
+            width: 50%;
+        }
+
+        .risk-bar-fill.high {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+            width: 85%;
+        }
+
+        .risk-factors {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .risk-factor {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+        }
+
+        .risk-factor-icon {
+            font-size: 14px;
+            min-width: 16px;
+        }
+
+        /* Security Widget */
+        .security-widget {
+            grid-column: 1;
+            background: linear-gradient(135deg, rgba(0, 191, 255, 0.15), rgba(0, 191, 255, 0.05));
+            border: 1px solid rgba(0, 191, 255, 0.3);
+        }
+
+        .widget-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #00bfff;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .widget-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+        }
+
+        .widget-icon {
+            font-size: 24px;
+        }
+
+        .widget-text {
+            flex: 1;
+        }
+
+        .widget-text-main {
+            font-weight: 600;
+            font-size: 14px;
+            color: #00bfff;
+        }
+
+        .widget-text-sub {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* Main Content Grid - 2 column */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        /* Browse Items Section */
+        .items-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .items-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .items-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #00bfff, #0099cc);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 191, 255, 0.3);
+        }
+
+        /* Item Cards Grid */
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .item-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .item-card:hover {
+            border-color: rgba(0, 191, 255, 0.3);
+            background: rgba(15, 23, 42, 0.7);
+        }
+
+        .item-image {
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(135deg, rgba(0, 191, 255, 0.2), rgba(0, 99, 204, 0.2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .item-info {
+            padding: 12px;
+        }
+
+        .item-title {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: #e2e8f0;
+        }
+
+        .item-category {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .item-location {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .item-action {
+            color: #00bfff;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .item-action:hover {
+            color: #22d3ee;
+        }
+
+        /* Sidebar Section */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .quick-stats {
+            display: grid;
+            gap: 12px;
+        }
+
+        .stat-item {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00bfff;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 24px 0;
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .status-card {
+                grid-column: auto;
+            }
+
+            .risk-card {
+                grid-column: auto;
+            }
+
+            .security-widget {
+                grid-column: auto;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px 16px;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+
+            .nav-right {
+                gap: 12px;
+            }
+
+            .user-details {
+                display: none;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .items-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+
+            .sidebar {
+                order: -1;
+                margin-bottom: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page-title {
+                font-size: 20px;
+            }
+
+            .nav {
+                gap: 12px;
+            }
+
+            .logo {
+                font-size: 16px;
+            }
+
+            .items-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+
+            .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <nav>
+            <a href="/" class="logo">
+                <span>📍</span>
+                Lost & Found
+            </a>
+            <div class="nav-right">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        {{ user.username|first|upper }}
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+                        <div class="user-status">Protected</div>
+                    </div>
+                </div>
+                <form method="POST" action="/logout/" style="margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-logout">Logout</button>
+                </form>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Manage your lost & found items with CyberAccess protection</p>
+
+        <!-- Feature Row 1: Security Status & Risk Indicator -->
+        <div class="dashboard-grid">
+            <!-- Feature 1: BOLA Defense Status -->
+            <div class="card status-card">
+                <div class="status-header">
+                    <div class="status-icon">🛡️</div>
+                    <div class="status-title">BOLA Defense Status</div>
+                </div>
+
+                <div class="status-badge protected">
+                    <span class="status-indicator protected"></span>
+                    Protected
+                </div>
+
+                <div class="status-details">
+                    <div class="status-detail-row">
+                        <span class="status-label">Authorization Level:</span>
+                        <span class="status-value">Full Access</span>
+                    </div>
+                    <div class="status-detail-row">
+                        <span class="status-label">Account Status:</span>
+                        <span class="status-value">Active</span>
+                    </div>
+                    <div class="status-detail-row">
+                        <span class="status-label">Security Tier:</span>
+                        <span class="status-value">Enterprise</span>
+                    </div>
+                    <div class="status-detail-row">
+                        <span class="status-label">Last Checked:</span>
+                        <span class="status-value">Just now</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 2: Live Risk Indicator -->
+            <div class="card risk-card">
+                <div class="risk-title">Risk Score</div>
+
+                <div class="risk-score-container">
+                    <div class="risk-score-big">15</div>
+                    <div class="risk-score-label">Out of 100</div>
+                </div>
+
+                <div class="risk-bar">
+                    <div class="risk-bar-fill"></div>
+                </div>
+
+                <div class="risk-factors">
+                    <div class="risk-factor">
+                        <span class="risk-factor-icon">✓</span>
+                        <span>Normal login patterns</span>
+                    </div>
+                    <div class="risk-factor">
+                        <span class="risk-factor-icon">✓</span>
+                        <span>Device verified</span>
+                    </div>
+                    <div class="risk-factor">
+                        <span class="risk-factor-icon">✓</span>
+                        <span>Location consistent</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 6: Security Score Widget -->
+            <div class="card security-widget">
+                <div class="widget-title">Transaction Security</div>
+                <div class="widget-content">
+                    <div class="widget-icon">🔐</div>
+                    <div class="widget-text">
+                        <div class="widget-text-main">Protected by CyberAccess</div>
+                        <div class="widget-text-sub">All transactions encrypted & monitored</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Row 2: Items + Quick Stats -->
+        <div class="content-grid">
+            <!-- Feature 4: Lost Item Listings -->
+            <div class="items-section">
+                <div class="items-header">
+                    <h2>Browse Found Items</h2>
+                    <a href="#post-item" class="btn-primary">Post Item</a>
+                </div>
+
+                <div class="items-grid">
+                    <!-- Item 1 -->
+                    <div class="item-card">
+                        <div class="item-image">👜</div>
+                        <div class="item-info">
+                            <div class="item-title">Black Leather Wallet</div>
+                            <div class="item-category">Electronics & Wallets</div>
+                            <div class="item-footer">
+                                <div class="item-location">📍 Downtown</div>
+                                <div class="item-action">💬</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Item 2 -->
+                    <div class="item-card">
+                        <div class="item-image">🔑</div>
+                        <div class="item-info">
+                            <div class="item-title">House Keys (Brass)</div>
+                            <div class="item-category">Keys</div>
+                            <div class="item-footer">
+                                <div class="item-location">📍 Parks</div>
+                                <div class="item-action">💬</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Item 3 -->
+                    <div class="item-card">
+                        <div class="item-image">📱</div>
+                        <div class="item-info">
+                            <div class="item-title">iPhone 14 Pro</div>
+                            <div class="item-category">Electronics</div>
+                            <div class="item-footer">
+                                <div class="item-location">📍 Mall</div>
+                                <div class="item-action">💬</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Item 4 -->
+                    <div class="item-card">
+                        <div class="item-image">👓</div>
+                        <div class="item-info">
+                            <div class="item-title">Prescription Glasses</div>
+                            <div class="item-category">Accessories</div>
+                            <div class="item-footer">
+                                <div class="item-location">📍 Library</div>
+                                <div class="item-action">💬</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats Sidebar -->
+            <div class="sidebar">
+                <div class="quick-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">12</div>
+                        <div class="stat-label">Items Posted</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">Items Found</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">7</div>
+                        <div class="stat-label">Messages</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">9</div>
+                        <div class="stat-label">Days Member</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Lost & Found. Secured by CyberAccess BOLA Defense. All data encrypted in transit and at rest.</p>
+    </footer>
+</body>
+</html>
