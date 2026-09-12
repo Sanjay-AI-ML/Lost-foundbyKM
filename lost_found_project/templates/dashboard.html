@@ -598,6 +598,158 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+
+        /* Feature 7: Audit Trail Timeline */
+        .audit-section {
+            margin-top: 40px;
+        }
+
+        .audit-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 32px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 12px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: linear-gradient(180deg, rgba(0, 191, 255, 0.3), transparent);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .timeline-item:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            left: -26px;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            background: rgba(30, 41, 59, 0.9);
+            border: 3px solid rgba(0, 191, 255, 0.5);
+            border-radius: 50%;
+        }
+
+        .timeline-dot.success {
+            border-color: #22c55e;
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+        }
+
+        .timeline-dot.warning {
+            border-color: #fb923c;
+            box-shadow: 0 0 8px rgba(251, 146, 60, 0.5);
+        }
+
+        .timeline-dot.info {
+            border-color: #00bfff;
+            box-shadow: 0 0 8px rgba(0, 191, 255, 0.5);
+        }
+
+        .timeline-dot.blocked {
+            border-color: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+        }
+
+        .timeline-event {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .event-title {
+            font-weight: 600;
+            color: #e2e8f0;
+            font-size: 14px;
+        }
+
+        .event-time {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        .event-description {
+            font-size: 13px;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+
+        .event-details {
+            display: flex;
+            gap: 16px;
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        .event-detail {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .event-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+
+        .badge-success {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .badge-warning {
+            background: rgba(251, 146, 60, 0.15);
+            color: #fb923c;
+            border: 1px solid rgba(251, 146, 60, 0.3);
+        }
+
+        .badge-info {
+            background: rgba(0, 191, 255, 0.15);
+            color: #00bfff;
+            border: 1px solid rgba(0, 191, 255, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px;
+            color: #94a3b8;
+        }
+
+        .empty-state-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
     </style>
 </head>
 <body>
@@ -789,6 +941,98 @@
                     <div class="stat-item">
                         <div class="stat-number">9</div>
                         <div class="stat-label">Days Member</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- Feature 7: Audit Trail Timeline -->
+        <div class="card audit-section">
+            <h2 class="audit-title">Recent Activity</h2>
+
+            <div class="timeline">
+                <!-- Activity 1: Login -->
+                <div class="timeline-item">
+                    <div class="timeline-dot success"></div>
+                    <div class="timeline-event">
+                        <div class="event-header">
+                            <div class="event-title">Login Successful</div>
+                            <div class="event-time">Just now</div>
+                        </div>
+                        <div class="event-description">You signed in to your account</div>
+                        <div class="event-details">
+                            <div class="event-detail">📍 New York, US</div>
+                            <div class="event-detail">💻 Chrome on Windows</div>
+                        </div>
+                        <div class="event-badge badge-success">Authorized</div>
+                    </div>
+                </div>
+
+                <!-- Activity 2: Item Posted -->
+                <div class="timeline-item">
+                    <div class="timeline-dot success"></div>
+                    <div class="timeline-event">
+                        <div class="event-header">
+                            <div class="event-title">Posted Found Item</div>
+                            <div class="event-time">2 hours ago</div>
+                        </div>
+                        <div class="event-description">Posted "Black Leather Wallet" to the platform</div>
+                        <div class="event-details">
+                            <div class="event-detail">📂 Item ID: #F001234</div>
+                            <div class="event-detail">📍 Downtown</div>
+                        </div>
+                        <div class="event-badge badge-success">Completed</div>
+                    </div>
+                </div>
+
+                <!-- Activity 3: Message Sent -->
+                <div class="timeline-item">
+                    <div class="timeline-dot info"></div>
+                    <div class="timeline-event">
+                        <div class="event-header">
+                            <div class="event-title">Message Sent</div>
+                            <div class="event-time">5 hours ago</div>
+                        </div>
+                        <div class="event-description">Contacted user@example.com about house keys</div>
+                        <div class="event-details">
+                            <div class="event-detail">🔐 Encrypted message</div>
+                            <div class="event-detail">⏱️ Delivery confirmed</div>
+                        </div>
+                        <div class="event-badge badge-info">Message</div>
+                    </div>
+                </div>
+
+                <!-- Activity 4: Failed Login Attempt -->
+                <div class="timeline-item">
+                    <div class="timeline-dot warning"></div>
+                    <div class="timeline-event">
+                        <div class="event-header">
+                            <div class="event-title">Suspicious Login Attempt</div>
+                            <div class="event-time">1 day ago</div>
+                        </div>
+                        <div class="event-description">Failed login from unknown location (IP mismatch)</div>
+                        <div class="event-details">
+                            <div class="event-detail">🌍 Moscow, RU</div>
+                            <div class="event-detail">🔒 Blocked by BOLA Defense</div>
+                        </div>
+                        <div class="event-badge badge-warning">Blocked</div>
+                    </div>
+                </div>
+
+                <!-- Activity 5: Account Verification -->
+                <div class="timeline-item">
+                    <div class="timeline-dot success"></div>
+                    <div class="timeline-event">
+                        <div class="event-header">
+                            <div class="event-title">Email Verified</div>
+                            <div class="event-time">5 days ago</div>
+                        </div>
+                        <div class="event-description">Your email address has been verified</div>
+                        <div class="event-details">
+                            <div class="event-detail">✓ hacker125431@gmail.com</div>
+                        </div>
+                        <div class="event-badge badge-success">Verified</div>
                     </div>
                 </div>
             </div>
