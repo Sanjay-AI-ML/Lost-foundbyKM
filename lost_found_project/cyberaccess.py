@@ -153,6 +153,21 @@ class CyberAccessClient:
             "explanations": [],
         }
 
+    def get_lockout_status(self, subject: str) -> dict:
+        """Queries the CyberAccess Behavioral Engine to check if this subject is quarantined."""
+        if not CYBERACCESS_ENABLED:
+            return {"is_locked": False, "lockout_remaining_seconds": 0, "strike_count": 0}
+        try:
+            resp = self.session.get(
+                f"{CYBERACCESS_API_URL}/lockout-status/{subject}",
+                timeout=CYBERACCESS_TIMEOUT,
+            )
+            if resp.status_code == 200:
+                return resp.json()
+        except Exception as e:
+            logger.debug("Error checking lockout status for %s: %s", subject, e)
+        return {"is_locked": False, "lockout_remaining_seconds": 0, "strike_count": 0}
+
 
 def get_client_ip(request: HttpRequest) -> str:
     """Extracts only the client IP address (no usernames).
@@ -242,55 +257,87 @@ class CyberAccessSecurityMiddleware:
             )
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
-        # Early-stage behavioral check: before serving ANY content, check if this subject is flagged
-        if CYBERACCESS_ENABLED and request.method in ['GET', 'POST']:
+        if CYBERACCESS_ENABLED and request.method in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
             path = request.path
             # Skip static files and admin
-            static_exts = ('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.map')
-            is_static = any(path.endswith(ext) for ext in static_exts)
-            is_admin = '/admin' in path or '/api/' in path
+            static_exts = ('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.map', '.mp4')
+            is_static = any(path.endswith(ext) for ext in static_exts) or path.startswith('/static/') or path.startswith('/media/')
+            is_admin = path.startswith('/admin/')
 
-            if not is_static and not is_admin and self._OBJECT_PATH_PATTERN.search(path):
-                # This is an object access attempt - check upfront if subject is blocked
+            if not is_static and not is_admin:
                 client_ip = get_client_ip(request)
-                m = self._OBJECT_PATH_PATTERN.search(path)
-                if m:
-                    obj_id = m.group(1)
-                    if "record" in path:
-                        resource_type = "record"
-                    elif "claim" in path:
-                        resource_type = "claim"
-                    else:
-                        resource_type = "item"
-                    resource_id = f"{resource_type}_{obj_id}"
+                subject = get_client_subject(request)
 
-                    # EARLY CHECK: Is this subject high-risk? Block before page render
-                    allowed, action, details = enforce_bola(
-                        request=request,
-                        resource_id=resource_id,
-                        is_authorized=False,
-                        resource_name="resource_access_check",
-                        http_verb=request.method,
-                        subject=client_ip,
-                    )
+                # 1. FULL-SITE INTEGRITY TAKEOVER (Avast/Kaspersky/Bitdefender style):
+                # If subject or client IP is under active quarantine cooldown, take over the entire website!
+                # Quarantined attackers cannot navigate to home, login, or any other endpoint.
+                client = CyberAccessClient.get_instance()
+                lockout = client.get_lockout_status(subject)
+                if not lockout.get("is_locked") and client_ip != subject:
+                    lockout = client.get_lockout_status(client_ip)
 
-                    # If blocked at entry point, show blocked page BEFORE rendering website
-                    if action == "block":
-                        rem_sec = details.get("lockout_remaining_s", 120) or 120
-                        context = {
-                            "subject": client_ip,
-                            "decision": "block",
-                            "score": details.get("score", 100.0),
-                            "category": details.get("category", "Attack"),
-                            "signals": details.get("signals", ["automated_enumeration"]),
-                            "explanations": details.get("explanations", ["Abnormal access pattern detected. Access quarantined."]),
-                            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-                            "contact_email": "security@company.com",
-                            "lockout_remaining_seconds": rem_sec,
-                            "strike_count": 1,
-                            "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
-                        }
-                        return render(request, "cyberaccess_blocked.html", context, status=403)
+                if lockout.get("is_locked"):
+                    rem_sec = int(lockout.get("lockout_remaining_seconds", 120) or 120)
+                    strike_count = lockout.get("strike_count", 1)
+                    context = {
+                        "subject": subject,
+                        "decision": "block",
+                        "score": 100.0,
+                        "category": "Attack",
+                        "signals": ["temporarily_blocked", f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m"],
+                        "explanations": [
+                            "Your identity has been quarantined due to malicious object enumeration or security violations.",
+                            f"Strike {strike_count}/3: Active quarantine cooldown penalty enforced across all application endpoints.",
+                            "Full-system integrity lockdown active. Direct navigation is disabled across all application endpoints."
+                        ],
+                        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                        "contact_email": "security@company.com",
+                        "lockout_remaining_seconds": rem_sec,
+                        "strike_count": strike_count,
+                        "lockout_type": f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m",
+                    }
+                    return render(request, "cyberaccess_blocked.html", context, status=403)
+
+                # 2. Object Access Check
+                if self._OBJECT_PATH_PATTERN.search(path):
+                    m = self._OBJECT_PATH_PATTERN.search(path)
+                    if m:
+                        obj_id = m.group(1)
+                        if "record" in path:
+                            resource_type = "record"
+                        elif "claim" in path:
+                            resource_type = "claim"
+                        else:
+                            resource_type = "item"
+                        resource_id = f"{resource_type}_{obj_id}"
+
+                        # EARLY CHECK: Is this subject high-risk? Block before page render
+                        allowed, action, details = enforce_bola(
+                            request=request,
+                            resource_id=resource_id,
+                            is_authorized=False,
+                            resource_name="resource_access_check",
+                            http_verb=request.method,
+                            subject=client_ip,
+                        )
+
+                        # If blocked at entry point, show blocked page BEFORE rendering website
+                        if action == "block":
+                            rem_sec = details.get("lockout_remaining_s", 120) or 120
+                            context = {
+                                "subject": client_ip,
+                                "decision": "block",
+                                "score": details.get("score", 100.0),
+                                "category": details.get("category", "Attack"),
+                                "signals": details.get("signals", ["automated_enumeration"]),
+                                "explanations": details.get("explanations", ["Abnormal access pattern detected. Access quarantined."]),
+                                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                                "contact_email": "security@company.com",
+                                "lockout_remaining_seconds": rem_sec,
+                                "strike_count": 1,
+                                "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
+                            }
+                            return render(request, "cyberaccess_blocked.html", context, status=403)
 
         response = self.get_response(request)
         if response.status_code == 404 and CYBERACCESS_ENABLED:

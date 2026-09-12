@@ -1,171 +1,552 @@
-{% extends 'base.html' %}
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRITICAL SECURITY INTERCEPT - CyberAccess Integrity Defense</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800;900&family=Outfit:wght@600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block title %}Security Intercept - CyberAccess BOLA Defense{% endblock %}
+        body {
+            background-color: #07090e;
+            color: #f8fafc;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            width: 100vw;
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
+        }
 
-{% block content %}
-<div class="container py-5" style="max-width: 800px; margin: 40px auto; padding: 0 20px;">
-    <div style="background: rgba(18, 20, 29, 0.95); border: 2px solid #ef4444; border-radius: 16px; box-shadow: 0 10px 40px rgba(239, 68, 68, 0.25); padding: 40px; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif;">
-        <div style="display: flex; align-items: center; gap: 16px; border-bottom: 1px solid rgba(239, 68, 68, 0.3); padding-bottom: 24px; margin-bottom: 24px;">
-            <div style="width: 56px; height: 56px; border-radius: 12px; background: rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; font-size: 28px; color: #ef4444; border: 1px solid #ef4444;">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
-            <div>
-                <span style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: {% if lockout_remaining_seconds and lockout_remaining_seconds > 0 %}#ef4444{% else %}#f59e0b{% endif %}; text-transform: uppercase;">
-                    {% if lockout_remaining_seconds and lockout_remaining_seconds > 0 %}QUARANTINE COOLDOWN ACTIVE{% else %}CYBERACCESS ACTIVE SECURITY SHIELD{% endif %}
-                </span>
-                <h2 style="font-family: 'Outfit', sans-serif; margin: 4px 0 0 0; font-size: 24px; color: #ffffff; font-weight: 700;">
-                    {% if lockout_remaining_seconds and lockout_remaining_seconds > 0 %}
-                        Access Quarantined: BOLA Threat Mitigated
-                    {% else %}
-                        Access Restricted: Protected Resource Identifier
-                    {% endif %}
-                </h2>
-            </div>
-            <div style="margin-left: auto; text-align: right;">
-                <span style="background: {% if lockout_remaining_seconds and lockout_remaining_seconds > 0 %}#ef4444{% else %}#f59e0b{% endif %}; color: #fff; font-weight: 800; font-size: 12px; padding: 6px 12px; border-radius: 999px; letter-spacing: 0.5px;">
-                    RISK SCORE: {{ score|default:"75.0" }}
-                </span>
-            </div>
-        </div>
+        /* Ambient Video Background Layer */
+        .threat-video-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: 1;
+            pointer-events: none;
+        }
 
-        <div style="background: rgba(239, 68, 68, 0.08); border-left: 4px solid {% if lockout_remaining_seconds and lockout_remaining_seconds > 0 %}#ef4444{% else %}#f59e0b{% endif %}; padding: 16px 20px; border-radius: 6px; margin-bottom: 24px;">
-            <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #fca5a5;">
-                <strong>Security Alert (OWASP API1:2023 - Broken Object Level Authorization):</strong>
-                {% if lockout_remaining_seconds and lockout_remaining_seconds > 0 %}
-                    Our automated telemetry detected an abnormal object enumeration pattern originating from this identity. To protect sensitive customer claims and listings, this identity is temporarily quarantined.
+        .threat-video-layer video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.20;
+            filter: saturate(0.6) brightness(0.4) contrast(1.2);
+        }
+
+        .threat-video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at 50% 30%, rgba(35, 8, 12, 0.88) 0%, rgba(7, 9, 14, 0.98) 100%);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Top High-Priority Warning Ribbon */
+        .threat-hazard-ribbon {
+            position: relative;
+            z-index: 100;
+            background: linear-gradient(90deg, #7f1d1d 0%, #dc2626 50%, #7f1d1d 100%);
+            color: #ffffff;
+            padding: 10px 20px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 25px rgba(220, 38, 38, 0.5);
+            border-bottom: 1px solid rgba(254, 202, 202, 0.3);
+        }
+
+        .threat-hazard-ribbon i {
+            animation: warningPulse 1.2s infinite ease-in-out;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.25); opacity: 0.7; }
+        }
+
+        /* Main Takeover Content Viewport */
+        .takeover-viewport {
+            position: relative;
+            z-index: 20;
+            min-height: calc(100vh - 42px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px 60px 20px;
+        }
+
+        .takeover-card {
+            width: 100%;
+            max-width: 880px;
+            background: rgba(14, 17, 26, 0.94);
+            border: 2px solid #ef4444;
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(239, 68, 68, 0.35), 0 20px 60px rgba(0, 0, 0, 0.8);
+            padding: 42px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Scanline Accent Effect */
+        .takeover-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #ef4444, #f59e0b, #ef4444);
+            box-shadow: 0 0 15px #ef4444;
+        }
+
+        /* Beacon Shield Icon */
+        .shield-beacon {
+            width: 76px;
+            height: 76px;
+            border-radius: 20px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 2px solid #ef4444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            color: #ef4444;
+            box-shadow: 0 0 35px rgba(239, 68, 68, 0.45);
+            flex-shrink: 0;
+        }
+
+        .takeover-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+            padding-bottom: 24px;
+            margin-bottom: 24px;
+        }
+
+        .takeover-header-text h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 26px;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+            margin-top: 4px;
+        }
+
+        .takeover-tag {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.8px;
+            text-transform: uppercase;
+            color: #f87171;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .takeover-score-badge {
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .score-pill {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: 999px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+            display: inline-block;
+        }
+
+        /* Alert Description Banner */
+        .alert-statement {
+            background: rgba(239, 68, 68, 0.09);
+            border-left: 4px solid #ef4444;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #fca5a5;
+        }
+
+        /* Identity & Enforcement 2-Column Grid */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .meta-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .meta-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+
+        .meta-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            word-break: break-all;
+        }
+
+        /* Massive Digital Quarantine Countdown Clock */
+        .timer-stage {
+            background: rgba(220, 38, 38, 0.12);
+            border: 2px solid rgba(239, 68, 68, 0.45);
+            border-radius: 14px;
+            padding: 28px;
+            margin-bottom: 26px;
+            text-align: center;
+            box-shadow: inset 0 0 30px rgba(220, 38, 38, 0.15);
+            position: relative;
+        }
+
+        .timer-headline {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #f87171;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .live-pulse-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 12px #ef4444;
+            animation: dotGlow 1s infinite alternate;
+        }
+
+        @keyframes dotGlow {
+            from { transform: scale(0.9); opacity: 0.6; }
+            to { transform: scale(1.3); opacity: 1; }
+        }
+
+        .timer-display {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 58px;
+            font-weight: 900;
+            color: #ef4444;
+            letter-spacing: 6px;
+            text-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
+            margin: 6px 0 10px 0;
+        }
+
+        .timer-sublabel {
+            font-size: 13px;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        .timer-lockout-policy-text {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-top: 14px;
+            line-height: 1.6;
+            max-width: 620px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Signals & Explanations Section */
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #94a3b8;
+            margin-bottom: 10px;
+        }
+
+        .signals-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .signal-pill {
+            background: rgba(239, 68, 68, 0.16);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 6px;
+        }
+
+        .explanation-list {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 13px;
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin-bottom: 26px;
+        }
+
+        /* Perimeter Status Footer (Zero Escape Navigation) */
+        .takeover-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .incident-ref code {
+            color: #fca5a5;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .lockdown-seal {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(239, 68, 68, 0.12);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top High-Priority Hazard Ribbon -->
+    <div class="threat-hazard-ribbon">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span>CRITICAL SECURITY INTERCEPT &bull; CYBERACCESS ACTIVE DEFENSE SYSTEM (OWASP API1:2023) &bull; WORKSTATION QUARANTINED</span>
+        <i class="fa-solid fa-triangle-exclamation"></i>
+    </div>
+
+    <!-- Ambient Motion Video Layer -->
+    <div class="threat-video-layer">
+        <video autoplay muted loop playsinline preload="auto">
+            <source src="{% static 'videos/background.mp4' %}" type="video/mp4">
+        </video>
+        <div class="threat-video-overlay"></div>
+    </div>
+
+    <!-- Full-Screen Takeover Viewport -->
+    <div class="takeover-viewport">
+        <div class="takeover-card">
+            <!-- Header -->
+            <div class="takeover-header">
+                <div class="shield-beacon">
+                    <i class="fa-solid fa-shield-virus"></i>
+                </div>
+                <div class="takeover-header-text">
+                    <div class="takeover-tag">
+                        <i class="fa-solid fa-circle-radiation"></i>
+                        <span>System Integrity Lockdown Active</span>
+                    </div>
+                    <h1>Threat Quarantined: Access Revoked</h1>
+                </div>
+                <div class="takeover-score-badge">
+                    <span class="score-pill">
+                        RISK SCORE: {{ score|default:"100.0" }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Threat Statement -->
+            <div class="alert-statement">
+                <strong>Security Intercept Notice (OWASP API1:2023 - Broken Object Level Authorization):</strong>
+                Our automated behavioral engine detected an unauthorized object enumeration probe originating from this identity. In accordance with zero-trust endpoint protection, all application endpoints, session tokens, and navigation channels are quarantined.
+            </div>
+
+            <!-- Metadata Panel -->
+            <div class="meta-grid">
+                <div class="meta-box">
+                    <div class="meta-label">Subject Identity</div>
+                    <div class="meta-value">
+                        <i class="fa-solid fa-user-lock" style="color: #ef4444;"></i>
+                        <span>{{ subject }}</span>
+                    </div>
+                </div>
+                <div class="meta-box">
+                    <div class="meta-label">Enforcement Policy</div>
+                    <div class="meta-value">
+                        <i class="fa-solid fa-gavel" style="color: #f59e0b;"></i>
+                        <span>3-Strike Adaptive Lockout</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Massive Digital Cooldown Clock -->
+            <div class="timer-stage">
+                <div class="timer-headline">
+                    <span class="live-pulse-dot"></span>
+                    <span>QUARANTINE COOLDOWN TIMER {% if strike_count %}(STRIKE {{ strike_count }}/3){% endif %}</span>
+                </div>
+
+                <div class="timer-display">
+                    <span id="lockoutTimerFormatted">--:--</span>
+                </div>
+
+                <div class="timer-sublabel" id="lockoutTimerSeconds">
+                    ({{ lockout_remaining_seconds|default:120 }} seconds remaining)
+                </div>
+
+                <div class="timer-lockout-policy-text">
+                    Access is strictly quarantined. All navigation and session interaction channels are disabled. 
+                    This perimeter lock will automatically release when this timer reaches zero.
+                </div>
+            </div>
+
+            <!-- Tripped Security Signals -->
+            <div class="section-title">Tripped Security Signals</div>
+            <div class="signals-row">
+                {% if signals %}
+                    {% for sig in signals %}
+                        <span class="signal-pill">{{ sig }}</span>
+                    {% endfor %}
                 {% else %}
-                    Direct access to this resource identifier has been intercepted by the CyberAccess BOLA Defense Engine. In accordance with zero-trust information disclosure standards, object existence is strictly obfuscated to prevent reconnaissance and automated enumeration probing.
+                    <span class="signal-pill">temporarily_blocked</span>
+                    <span class="signal-pill">strike_1_soft_lockout_2m</span>
                 {% endif %}
-            </p>
-        </div>
+            </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 16px; border-radius: 8px;">
-                <div style="font-size: 11px; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Subject Identity</div>
-                <div style="font-size: 15px; font-weight: 600; color: #ffffff; word-break: break-all;">
-                    <i class="fa-solid fa-user-lock" style="margin-right: 6px; color: #ef4444;"></i>{{ subject }}
-                </div>
-            </div>
-            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 16px; border-radius: 8px;">
-                <div style="font-size: 11px; text-transform: uppercase; color: #94a3b8; margin-bottom: 6px;">Enforcement Policy</div>
-                <div style="font-size: 15px; font-weight: 600; color: #ffffff;">
-                    <i class="fa-solid fa-gavel" style="margin-right: 6px; color: #eab308;"></i>3-Strike Adaptive Lockout
-                </div>
-            </div>
-        </div>
-
-        {% if lockout_remaining_seconds and lockout_remaining_seconds > 0 %}
-        <!-- QUARANTINE COOLDOWN TIMER -->
-        <div style="background: rgba(220, 38, 38, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 24px; margin-bottom: 24px; text-align: center;">
-            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #f87171; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 10px #ef4444;"></span>
-                QUARANTINE COOLDOWN TIMER {% if strike_count %}(Strike {{ strike_count }}/3){% endif %}
-            </div>
-            <div id="lockoutTimerFormatted" style="font-family: 'Courier New', monospace; font-size: 48px; font-weight: 800; color: #ef4444; letter-spacing: 4px; margin-bottom: 6px;">
-                02:00
-            </div>
-            <div id="lockoutTimerSeconds" style="font-size: 12px; color: #94a3b8;">
-                ({{ lockout_remaining_seconds }} seconds remaining)
-            </div>
-            <div style="font-size: 13px; color: #cbd5e1; margin-top: 12px; line-height: 1.6;">
-                Access is quarantined. The lock will automatically release when this timer reaches zero.
-            </div>
-        </div>
-
-        <script>
-            (function() {
-                let remaining = parseInt("{{ lockout_remaining_seconds }}", 10) || 120;
-                const formattedEl = document.getElementById('lockoutTimerFormatted');
-                const secondsEl = document.getElementById('lockoutTimerSeconds');
-                
-                function updateDisplay() {
-                    const m = Math.floor(remaining / 60);
-                    const s = remaining % 60;
-                    if (formattedEl) {
-                        formattedEl.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-                    }
-                    if (secondsEl) {
-                        secondsEl.textContent = '(' + remaining + ' seconds remaining)';
-                    }
-                }
-                
-                updateDisplay();
-                const timer = setInterval(() => {
-                    remaining--;
-                    if (remaining <= 0) {
-                        clearInterval(timer);
-                        if (formattedEl) {
-                            formattedEl.textContent = '00:00';
-                            formattedEl.style.color = '#10b981';
-                        }
-                        if (secondsEl) {
-                            secondsEl.innerHTML = '<span style="color: #10b981; font-weight: bold;">Cooldown Expired! Refresh the page to access.</span>';
-                        }
-                    } else {
-                        updateDisplay();
-                    }
-                }, 1000);
-            })();
-        </script>
-        {% else %}
-        <!-- PROTECTED RESOURCE ENFORCEMENT NOTICE -->
-        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: flex-start; gap: 16px;">
-            <div style="font-size: 24px; color: #f59e0b; padding-top: 2px;">
-                <i class="fa-solid fa-eye-slash"></i>
-            </div>
-            <div>
-                <div style="font-size: 14px; font-weight: 700; color: #ffffff; margin-bottom: 4px;">
-                    Object Obfuscation &amp; Zero-Trust Verification Active
-                </div>
-                <div style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">
-                    To protect user privacy and prevent resource enumeration, system object identifiers cannot be browsed directly without authorized access. If you believe this is an error, please verify your session or browse verified listings from the directory.
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        {% if signals %}
-        <div style="margin-bottom: 24px;">
-            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 10px; letter-spacing: 0.5px;">
-                Tripped Security Signals:
-            </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                {% for signal in signals %}
-                <span style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 12px; padding: 4px 10px; border-radius: 6px; font-family: monospace;">
-                    {{ signal }}
-                </span>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if explanations %}
-        <div style="margin-bottom: 28px;">
-            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 8px; letter-spacing: 0.5px;">
-                Detector Explanation:
-            </div>
-            <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #cbd5e1; line-height: 1.6;">
-                {% for exp in explanations %}
-                <li>{{ exp }}</li>
-                {% endfor %}
+            <!-- Detector Explanations -->
+            <div class="section-title">Detector Analysis &amp; Explanation</div>
+            <ul class="explanation-list">
+                {% if explanations %}
+                    {% for exp in explanations %}
+                        <li>{{ exp }}</li>
+                    {% endfor %}
+                {% else %}
+                    <li>Your identity has been temporarily quarantined due to malicious object enumeration patterns.</li>
+                    <li>Strike 1/3: 2-Minute Soft Lockout penalty enforced across all application endpoints.</li>
+                {% endif %}
             </ul>
-        </div>
-        {% endif %}
 
-        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 20px;">
-            <div style="font-size: 11px; color: #64748b;">
-                Incident Timestamp: <code>{{ timestamp }}</code>
-            </div>
-            <div style="display: flex; gap: 12px;">
-                <a href="{% url 'items:home' %}" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.08); color: #ffffff; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.15); transition: background 0.2s;">
-                    <i class="fa-solid fa-house"></i> Return Home
-                </a>
-                <a href="{% url 'items:lost_items' %}" style="display: inline-flex; align-items: center; gap: 8px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; border: 1px solid rgba(59, 130, 246, 0.3); transition: background 0.2s;">
-                    <i class="fa-solid fa-compass"></i> Browse Directory
-                </a>
+            <!-- Perimeter Status Footer (Zero Escape Buttons!) -->
+            <div class="takeover-footer">
+                <div class="incident-ref">
+                    Incident Timestamp: <code>{{ timestamp }}</code>
+                </div>
+                <div class="lockdown-seal" id="lockdownStatusIndicator">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Workstation Quarantined &bull; Navigation Disabled</span>
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
+
+    <!-- Real-Time Quarantine Countdown & Auto-Release Engine -->
+    <script>
+        (function() {
+            let remaining = parseInt("{{ lockout_remaining_seconds|default:120 }}", 10);
+            if (isNaN(remaining) || remaining <= 0) {
+                remaining = 120;
+            }
+
+            const formattedEl = document.getElementById('lockoutTimerFormatted');
+            const secondsEl = document.getElementById('lockoutTimerSeconds');
+            const statusIndicator = document.getElementById('lockdownStatusIndicator');
+
+            function updateDisplay() {
+                const m = Math.floor(remaining / 60);
+                const s = remaining % 60;
+                if (formattedEl) {
+                    formattedEl.textContent = String(m).padStart(2, '0') + ' : ' + String(s).padStart(2, '0');
+                }
+                if (secondsEl) {
+                    secondsEl.textContent = '(' + remaining + ' seconds remaining)';
+                }
+            }
+
+            updateDisplay();
+
+            const interval = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    if (formattedEl) {
+                        formattedEl.textContent = '00 : 00';
+                        formattedEl.style.color = '#10b981';
+                        formattedEl.style.textShadow = '0 0 30px rgba(16, 185, 129, 0.6)';
+                    }
+                    if (secondsEl) {
+                        secondsEl.innerHTML = '<span style="color: #10b981; font-weight: bold;"><i class="fa-solid fa-circle-check"></i> Cooldown expired. Re-validating identity clearance...</span>';
+                    }
+                    if (statusIndicator) {
+                        statusIndicator.style.background = 'rgba(16, 185, 129, 0.15)';
+                        statusIndicator.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                        statusIndicator.style.color = '#10b981';
+                        statusIndicator.innerHTML = '<i class="fa-solid fa-lock-open"></i> Clearance Restored';
+                    }
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1800);
+                } else {
+                    updateDisplay();
+                }
+            }, 1000);
+        })();
+    </script>
+</body>
+</html>
