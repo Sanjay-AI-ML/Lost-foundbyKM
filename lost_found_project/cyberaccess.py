@@ -322,15 +322,15 @@ class CyberAccessSecurityMiddleware:
             # Skip static files and admin
             static_exts = ('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.map', '.mp4')
             is_static = any(path.endswith(ext) for ext in static_exts) or path.startswith('/static/') or path.startswith('/media/')
-            is_admin = path.startswith('/admin/')
+            is_admin = path.startswith('/admin/') or path.startswith('/admin')
 
-            if not is_static and not is_admin:
+            if not is_static:
                 client_ip = get_client_ip(request)
                 subject = get_client_subject(request)
 
                 # 1. FULL-SITE INTEGRITY TAKEOVER (Avast/Kaspersky/Bitdefender style):
                 # If subject or client IP is under active quarantine cooldown, take over the entire website!
-                # Quarantined attackers cannot navigate to home, login, or any other endpoint.
+                # Quarantined attackers cannot navigate to home, login, admin, or any other endpoint.
                 client = CyberAccessClient.get_instance()
                 now_ts = time.time()
                 local_q = _ACTIVE_QUARANTINES.get(subject) or _ACTIVE_QUARANTINES.get(client_ip)
@@ -386,8 +386,8 @@ class CyberAccessSecurityMiddleware:
                     }
                     return render_cyberaccess_blocked(request, context, status=403)
 
-                # 2. Object Access Check
-                if self._OBJECT_PATH_PATTERN.search(path):
+                # 2. Object Access Check (for non-admin object endpoints)
+                if not is_admin and self._OBJECT_PATH_PATTERN.search(path):
                     m = self._OBJECT_PATH_PATTERN.search(path)
                     if m:
                         obj_id = m.group(1)
@@ -439,66 +439,131 @@ class CyberAccessSecurityMiddleware:
                             return render_cyberaccess_blocked(request, context, status=403)
 
         response = self.get_response(request)
-        if response.status_code == 404 and CYBERACCESS_ENABLED:
+        if CYBERACCESS_ENABLED:
             path = request.path
-            # Skip static/media files
-            static_exts = ('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.map')
-            if not any(path.endswith(ext) for ext in static_exts):
-                m = self._OBJECT_PATH_PATTERN.search(path)
-                # If this is an object access attempt (item/claim/record), show blocked page instead of 404
-                if m:
-                    obj_id = m.group(1)
-                    if "record" in path:
-                        resource_type = "record"
-                    elif "claim" in path:
-                        resource_type = "claim"
-                    else:
-                        resource_type = "item"
-                    resource_id = f"{resource_type}_{obj_id}"
-
-                    client_ip = get_client_ip(request)
-                    allowed, action, details = enforce_bola(
-                        request=request,
-                        resource_id=resource_id,
-                        is_authorized=False,
-                        resource_name="resource_not_found",
-                        http_verb=request.method,
-                        subject=client_ip,
+            static_exts = ('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.map', '.mp4')
+            if not any(path.endswith(ext) for ext in static_exts) and not path.startswith('/static/') and not path.startswith('/media/'):
+                is_admin = path.startswith('/admin/') or path.startswith('/admin')
+                if is_admin:
+                    is_authenticated = getattr(request.user, 'is_authenticated', False)
+                    is_staff = getattr(request.user, 'is_staff', False)
+                    # In Django admin, failed login POST returns 200 (re-rendering form with errors) or 401/403.
+                    # Successful login returns 302 redirect.
+                    is_failed_admin_login = (
+                        request.method == 'POST' and (
+                            (response.status_code == 200 and not (is_authenticated and is_staff))
+                            or response.status_code in (401, 403)
+                        )
                     )
+                    if is_failed_admin_login:
+                        attempted_user = request.POST.get('username', '').strip() or 'unknown'
+                        client_ip = get_client_ip(request)
+                        now_ts = time.time()
+                        client = CyberAccessClient.get_instance()
 
-                    now = time.time()
-                    q_entry = get_or_register_quarantine(client_ip, 120)
-                    rem_sec = q_entry["remaining_seconds"]
-                    expires_at = q_entry["expires_at"]
+                        # Enforce through CyberAccess Behavioral Risk Engine
+                        allowed, action, details = enforce_bola(
+                            request=request,
+                            resource_id="privileged_admin_portal",
+                            is_authorized=False,
+                            resource_name="admin_login_probe",
+                            http_verb=request.method,
+                            subject=client_ip,
+                        )
 
-                    client = CyberAccessClient.get_instance()
-                    client.log_timer_event(
-                        subject=client_ip,
-                        remaining_seconds=rem_sec,
-                        expires_at=expires_at,
-                        strike_count=1,
-                        reason="Object enumeration probe on non-existent record"
-                    )
+                        rem_sec = details.get("lockout_remaining_s") or 120
+                        expires_at = details.get("lockout_expires_at") or int(now_ts + rem_sec)
+                        rem_sec = max(0, int(expires_at - now_ts))
+                        strike_count = details.get("strike_count") or 1
 
-                    context = {
-                        "subject": client_ip,
-                        "decision": "block",
-                        "score": details.get("score", 75.0),
-                        "category": details.get("category", "Suspicious Activity"),
-                        "signals": details.get("signals", ["object_enumeration", "resource_discovery"]),
-                        "explanations": details.get("explanations", [
-                            "Access to this resource is restricted.",
-                            "Object enumeration attempts are monitored and logged."
-                        ]),
-                        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-                        "contact_email": "security@company.com",
-                        "strike_count": 1,
-                        "is_locked": True,
-                        "lockout_remaining_seconds": rem_sec,
-                        "lockout_expires_at": expires_at,
-                        "lockout_type": "soft_lockout_2m",
-                    }
-                    return render_cyberaccess_blocked(request, context, status=403)
+                        get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
+                        if attempted_user and attempted_user != "unknown":
+                            get_or_register_quarantine(attempted_user, rem_sec, expires_at, strike_count)
+
+                        client.log_timer_event(
+                            subject=client_ip,
+                            remaining_seconds=rem_sec,
+                            expires_at=expires_at,
+                            strike_count=strike_count,
+                            reason=f"Failed administrative credential entry for '{attempted_user}'"
+                        )
+
+                        context = {
+                            "subject": client_ip,
+                            "decision": "block",
+                            "score": details.get("score", 95.0),
+                            "category": details.get("category", "Attack"),
+                            "signals": details.get("signals") or ["unauthorized_admin_access_attempt", "blocked_due_to_high_risk", f"strike_{strike_count}_soft_lockout_2m"],
+                            "explanations": details.get("explanations") or [
+                                "Unauthorized administrative access probe detected.",
+                                "Direct credential brute-forcing against privileged portals is prohibited.",
+                                f"Strike {strike_count}/3: Active quarantine cooldown penalty enforced across all application endpoints."
+                            ],
+                            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                            "contact_email": "security@company.com",
+                            "lockout_remaining_seconds": rem_sec,
+                            "lockout_expires_at": expires_at,
+                            "strike_count": strike_count,
+                            "lockout_type": f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m",
+                        }
+                        return render_cyberaccess_blocked(request, context, status=403)
+
+                if response.status_code == 404:
+                    m = self._OBJECT_PATH_PATTERN.search(path)
+                    # If this is an object access attempt (item/claim/record), show blocked page instead of 404
+                    if m:
+                        obj_id = m.group(1)
+                        if "record" in path:
+                            resource_type = "record"
+                        elif "claim" in path:
+                            resource_type = "claim"
+                        else:
+                            resource_type = "item"
+                        resource_id = f"{resource_type}_{obj_id}"
+
+                        client_ip = get_client_ip(request)
+                        allowed, action, details = enforce_bola(
+                            request=request,
+                            resource_id=resource_id,
+                            is_authorized=False,
+                            resource_name="resource_not_found",
+                            http_verb=request.method,
+                            subject=client_ip,
+                        )
+
+                        now = time.time()
+                        q_entry = get_or_register_quarantine(client_ip, 120)
+                        rem_sec = q_entry["remaining_seconds"]
+                        expires_at = q_entry["expires_at"]
+
+                        client = CyberAccessClient.get_instance()
+                        client.log_timer_event(
+                            subject=client_ip,
+                            remaining_seconds=rem_sec,
+                            expires_at=expires_at,
+                            strike_count=1,
+                            reason="Object enumeration probe on non-existent record"
+                        )
+
+                        context = {
+                            "subject": client_ip,
+                            "decision": "block",
+                            "score": details.get("score", 75.0),
+                            "category": details.get("category", "Suspicious Activity"),
+                            "signals": details.get("signals", ["object_enumeration", "resource_discovery"]),
+                            "explanations": details.get("explanations", [
+                                "Access to this resource is restricted.",
+                                "Object enumeration attempts are monitored and logged."
+                            ]),
+                            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                            "contact_email": "security@company.com",
+                            "strike_count": 1,
+                            "is_locked": True,
+                            "lockout_remaining_seconds": rem_sec,
+                            "lockout_expires_at": expires_at,
+                            "lockout_type": "soft_lockout_2m",
+                        }
+                        return render_cyberaccess_blocked(request, context, status=403)
         return response
 
     def process_exception(self, request: HttpRequest, exception: Exception):
