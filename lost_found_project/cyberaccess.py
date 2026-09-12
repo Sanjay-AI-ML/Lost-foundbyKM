@@ -295,6 +295,7 @@ class CyberAccessSecurityMiddleware:
             static_exts = ('.css', '.js', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.map')
             if not any(path.endswith(ext) for ext in static_exts):
                 m = self._OBJECT_PATH_PATTERN.search(path)
+                # If this is an object access attempt (item/claim/record), show blocked page instead of 404
                 if m:
                     obj_id = m.group(1)
                     if "record" in path:
@@ -304,30 +305,33 @@ class CyberAccessSecurityMiddleware:
                     else:
                         resource_type = "item"
                     resource_id = f"{resource_type}_{obj_id}"
-                else:
-                    clean = path.strip('/')
-                    resource_id = f"404_{clean}" if clean else "404_root"
 
-                client_ip = get_client_ip(request)
-                allowed, action, details = enforce_bola(
-                    request=request,
-                    resource_id=resource_id,
-                    is_authorized=False,
-                    resource_name="404_object_fuzz",
-                    http_verb=request.method,
-                    subject=client_ip,
-                )
-                if action == "block":
+                    client_ip = get_client_ip(request)
+                    allowed, action, details = enforce_bola(
+                        request=request,
+                        resource_id=resource_id,
+                        is_authorized=False,
+                        resource_name="resource_not_found",
+                        http_verb=request.method,
+                        subject=client_ip,
+                    )
+
+                    # Always show blocked page for 404s on protected resources (security by obscurity)
+                    # Don't reveal that resource exists or doesn't exist
                     context = {
                         "subject": client_ip,
-                        "decision": "block",
-                        "score": details.get("score", 100.0),
-                        "category": details.get("category", "Attack"),
-                        "signals": details.get("signals", ["rapid_enumeration"]),
-                        "explanations": details.get("explanations", ["Subject blocked after automated path enumeration."]),
+                        "decision": action or "block",
+                        "score": details.get("score", 75.0),  # High score for enumeration attempts
+                        "category": details.get("category", "Suspicious Activity"),
+                        "signals": details.get("signals", ["object_enumeration", "resource_discovery"]),
+                        "explanations": details.get("explanations", [
+                            "Access to this resource is restricted.",
+                            "Object enumeration attempts are monitored and logged."
+                        ]),
                         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
                         "contact_email": "security@company.com",
                     }
+                    # Return blocked page instead of 404 error message
                     return render(request, "cyberaccess_blocked.html", context, status=403)
         return response
 
