@@ -4,7 +4,7 @@
 {% block title %}Sign In - Lost & Found Portal{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'accounts/css/accounts.css' %}?v=3.0">
+<link rel="stylesheet" href="{% static 'accounts/css/accounts.css' %}?v=5.0">
 {% endblock %}
 
 {% block content %}
@@ -58,11 +58,11 @@
                     <span>Demo 1-Click Credentials:</span>
                 </div>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <button type="button" onclick="fillCredentials('alice_test', 'password123')" style="flex: 1; padding: 7px 10px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease;">
+                    <button type="button" onclick="fillCredentials('alice', 'password123')" style="flex: 1; padding: 7px 10px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease;">
                         <i class="fa-solid fa-user-ninja" style="color: #f87171;"></i>
                         <span>Alice (Attacker)</span>
                     </button>
-                    <button type="button" onclick="fillCredentials('bob_test', 'password123')" style="flex: 1; padding: 7px 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease;">
+                    <button type="button" onclick="fillCredentials('bob', 'password123')" style="flex: 1; padding: 7px 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease;">
                         <i class="fa-solid fa-user-shield" style="color: #34d399;"></i>
                         <span>Bob (Item Owner)</span>
                     </button>
