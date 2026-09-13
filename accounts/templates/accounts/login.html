@@ -51,6 +51,24 @@
             </div>
 
 
+            <!-- Demo Quick-Fill Credentials -->
+            <div style="margin: 16px 0; padding: 12px; background: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 12px;">
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-key" style="color: #60a5fa;"></i>
+                    <span>Demo 1-Click Credentials:</span>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" onclick="fillCredentials('alice_test', 'password123')" style="flex: 1; padding: 7px 10px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.4); color: #93c5fd; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease;">
+                        <i class="fa-solid fa-user-ninja" style="color: #f87171;"></i>
+                        <span>Alice (Attacker)</span>
+                    </button>
+                    <button type="button" onclick="fillCredentials('bob_test', 'password123')" style="flex: 1; padding: 7px 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease;">
+                        <i class="fa-solid fa-user-shield" style="color: #34d399;"></i>
+                        <span>Bob (Item Owner)</span>
+                    </button>
+                </div>
+            </div>
+
             <button type="submit" class="btn btn-primary btn-block">
                 <span>Sign In</span>
                 <i class="fa-solid fa-arrow-right"></i>
@@ -66,4 +84,12 @@
 
 {% block extra_js %}
 <script src="{% static 'accounts/js/accounts.js' %}"></script>
+<script>
+    function fillCredentials(username, password) {
+        var u = document.getElementById('id_username');
+        var p = document.getElementById('id_password');
+        if (u) u.value = username;
+        if (p) p.value = password;
+    }
+</script>
 {% endblock %}

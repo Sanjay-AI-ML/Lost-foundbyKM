@@ -3,23 +3,191 @@
 
 {% block title %}404 - Page Not Found | Lost & Found Portal{% endblock %}
 
+{% block extra_css %}
+<style>
+    .not-found-wrapper {
+        min-height: 75vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+    .not-found-card {
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 24px;
+        padding: 48px 40px;
+        max-width: 580px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45), 0 0 35px rgba(59, 130, 246, 0.15);
+        position: relative;
+        overflow: hidden;
+    }
+    .not-found-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #3b82f6, #6366f1, #ec4899);
+    }
+    .not-found-orb {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background: rgba(59, 130, 246, 0.12);
+        border: 2px solid rgba(59, 130, 246, 0.35);
+        color: #60a5fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        margin: 0 auto 24px;
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.25);
+        animation: floatOrb 4s ease-in-out infinite;
+    }
+    @keyframes floatOrb {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-8px); }
+    }
+    .not-found-code {
+        font-family: 'Outfit', sans-serif;
+        font-size: 4.5rem;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -2px;
+        background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 12px;
+    }
+    .not-found-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 12px;
+    }
+    .not-found-desc {
+        color: #94a3b8;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 28px;
+    }
+    .not-found-search {
+        margin-bottom: 28px;
+    }
+    .not-found-search-box {
+        display: flex;
+        align-items: center;
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 6px 14px;
+        transition: all 0.2s ease;
+    }
+    .not-found-search-box:focus-within {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    .not-found-search-box input {
+        background: transparent;
+        border: none;
+        outline: none;
+        color: #f8fafc;
+        width: 100%;
+        padding: 8px;
+        font-size: 0.95rem;
+    }
+    .not-found-search-box input::placeholder {
+        color: #64748b;
+    }
+    .not-found-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+    }
+    .not-found-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    .not-found-btn-primary {
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        color: #ffffff;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+    }
+    .not-found-btn-primary:hover {
+        background: linear-gradient(135deg, #1d4ed8, #2563eb);
+        transform: translateY(-2px);
+        color: #ffffff;
+    }
+    .not-found-btn-secondary {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #e2e8f0;
+    }
+    .not-found-btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="auth-wrapper">
-    <div class="auth-card max-w-500 text-center">
-        <div class="header-icon-badge" style="background:#fee2e2; color:#ef4444; width:72px; height:72px; font-size:2.25rem;">
-            <i class="fa-solid fa-map-location-dot"></i>
+<div class="not-found-wrapper">
+    <div class="not-found-card">
+        <div class="not-found-orb">
+            <i class="fa-solid fa-compass"></i>
         </div>
-        <h1 style="font-size:3rem; font-weight:800; color:#0f172a; margin:0.5rem 0;">404</h1>
-        <h2>Looks Like This Page Is Lost Too!</h2>
-        <p class="text-muted">The page you were looking for doesn't exist, was removed, or had its name changed.</p>
-        
-        <div class="mt-4">
-            <a href="{% url 'items:home' %}" class="btn btn-primary">
-                <i class="fa-solid fa-house"></i> Return Home
+        <div class="not-found-code">404</div>
+        <h1 class="not-found-title">Looks Like This Page Is Lost Too!</h1>
+        <p class="not-found-desc">
+            The page, route, or object you were navigating to could not be found. It may have been moved, renamed, or never existed.
+        </p>
+
+        <!-- Inline Quick Search -->
+        <div class="not-found-search">
+            <form method="GET" action="{% url 'items:home' %}">
+                <div class="not-found-search-box">
+                    <i class="fa-solid fa-magnifying-glass" style="color: #64748b; margin-right: 6px;"></i>
+                    <input type="text" name="q" placeholder="Search for items, categories, or keywords..." autocomplete="off">
+                    <button type="submit" class="not-found-btn not-found-btn-primary" style="padding: 6px 14px; font-size: 0.85rem;">Search</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="not-found-actions">
+            <a href="{% url 'items:home' %}" class="not-found-btn not-found-btn-primary">
+                <i class="fa-solid fa-house"></i>
+                <span>Return Home</span>
             </a>
-            <a href="{% url 'items:lost_items' %}" class="btn btn-outline ml-2">
-                Browse Items
+            <a href="{% url 'items:lost_items' %}" class="not-found-btn not-found-btn-secondary">
+                <i class="fa-solid fa-circle-exclamation" style="color: #ef4444;"></i>
+                <span>Lost Items</span>
             </a>
+            <a href="{% url 'items:found_items' %}" class="not-found-btn not-found-btn-secondary">
+                <i class="fa-solid fa-hand-holding-heart" style="color: #10b981;"></i>
+                <span>Found Items</span>
+            </a>
+            {% if not user.is_authenticated %}
+            <a href="{% url 'direct_login' %}" class="not-found-btn not-found-btn-secondary">
+                <i class="fa-solid fa-right-to-bracket" style="color: #60a5fa;"></i>
+                <span>Sign In</span>
+            </a>
+            {% endif %}
         </div>
     </div>
 </div>

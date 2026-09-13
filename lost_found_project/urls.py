@@ -8,6 +8,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import render
 from lost_found_project.attack_api import trigger_attack, reset_demo
+from accounts.views import login_view, register_view, logout_view, profile_view
 
 def about_view(request):
     return render(request, 'about.html')
@@ -16,6 +17,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('trigger-attack', trigger_attack, name='trigger_attack'),
     path('reset', reset_demo, name='reset_demo'),
+    path('login/', login_view, name='direct_login'),
+    path('register/', register_view, name='direct_register'),
+    path('signup/', register_view, name='direct_signup'),
+    path('logout/', logout_view, name='direct_logout'),
+    path('profile/', profile_view, name='direct_profile'),
     path('', include('items.urls', namespace='items')),
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('claims/', include('claims.urls', namespace='claims')),

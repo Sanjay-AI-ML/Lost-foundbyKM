@@ -591,6 +591,8 @@ class CyberAccessSecurityMiddleware:
                                 "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
                             }
                             return render_cyberaccess_blocked(request, context, status=403)
+                    # For all non-quarantined 404s, render custom 404 template instead of technical debug screen
+                    return render(request, "404.html", status=404)
         return response
 
     def process_exception(self, request: HttpRequest, exception: Exception):

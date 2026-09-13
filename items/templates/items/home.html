@@ -15,12 +15,21 @@
         <div class="portal-hero-left">
             <div class="user-greeting-badge">
                 <div class="greeting-avatar-orb">
-                    <span class="user-initial">{{ user.first_name|default:user.username|slice:":1"|upper }}</span>
-                    <span class="online-pulse-dot" title="Network Connected"></span>
+                    {% if user.is_authenticated %}
+                        <span class="user-initial">{{ user.first_name|default:user.username|slice:":1"|upper }}</span>
+                        <span class="online-pulse-dot" title="Network Connected"></span>
+                    {% else %}
+                        <i class="fa-solid fa-compass" style="font-size: 20px; color: #60a5fa;"></i>
+                        <span class="online-pulse-dot" title="System Online"></span>
+                    {% endif %}
                 </div>
                 <div class="user-greeting-meta">
                     <h1 class="welcome-heading">
-                        Welcome, <span class="gradient-username">{{ user.first_name|default:user.username }}</span>!
+                        {% if user.is_authenticated %}
+                            Welcome back, <span class="gradient-username">{{ user.first_name|default:user.username }}</span>!
+                        {% else %}
+                            Welcome to <span class="gradient-username">Lost & Found Portal</span>
+                        {% endif %}
                     </h1>
                 </div>
             </div>
