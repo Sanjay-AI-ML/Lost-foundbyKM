@@ -1,0 +1,123 @@
+/* System Defense Toggle for Login Page */
+.system-defense-demo-panel {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
+    border: 2px solid rgba(16, 185, 129, 0.3);
+    border-radius: 16px;
+    text-align: center;
+}
+
+.demo-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #34d399;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.system-defense-toggle-login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: 2px solid #34d399;
+    border-radius: 14px;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(52, 211, 153, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.system-defense-toggle-login::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.system-defense-toggle-login:hover::before {
+    left: 100%;
+}
+
+.system-defense-toggle-login:hover {
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.7), 0 0 60px rgba(52, 211, 153, 0.4);
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.toggle-icon-login {
+    font-size: 1.5rem;
+    display: inline-block;
+}
+
+.toggle-text-login {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-direction: column;
+}
+
+.toggle-label-login {
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.toggle-status-login {
+    display: inline-block;
+    padding: 0.3rem 0.7rem;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 0.75rem;
+    min-width: 35px;
+    text-align: center;
+    animation: statusPulseLogin 2s ease-in-out infinite;
+}
+
+.system-defense-toggle-login.defense-off-login {
+    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+    border-color: #fb7185;
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.4), 0 0 40px rgba(251, 113, 133, 0.2);
+}
+
+.system-defense-toggle-login.defense-off-login:hover {
+    box-shadow: 0 0 30px rgba(244, 63, 94, 0.7), 0 0 60px rgba(251, 113, 133, 0.4);
+    background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+}
+
+.defense-help-text {
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+@keyframes statusPulseLogin {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}

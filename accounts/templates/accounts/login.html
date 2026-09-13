@@ -18,6 +18,19 @@
             <p>Log in to manage your lost or found items and claims.</p>
         </div>
 
+        <!-- System Defense Toggle - Prominent Demo Button -->
+        <div class="system-defense-demo-panel">
+            <div class="demo-label">🛡️ SECURITY DEMO</div>
+            <button class="system-defense-toggle-login" id="systemDefenseToggleLogin" type="button" title="Toggle BOLA Defense System">
+                <span class="toggle-icon-login">🛡️</span>
+                <span class="toggle-text-login">
+                    <span class="toggle-label-login">Defense System</span>
+                    <span class="toggle-status-login" id="toggleStatusLogin">ON</span>
+                </span>
+            </button>
+            <p class="defense-help-text">Click to toggle between Protected and Vulnerable modes</p>
+        </div>
+
         <form method="POST" class="auth-form" id="loginForm">
             {% csrf_token %}
 
@@ -91,5 +104,43 @@
         if (u) u.value = username;
         if (p) p.value = password;
     }
+
+    // System Defense Toggle Handler (Login Page)
+    document.getElementById('systemDefenseToggleLogin')?.addEventListener('click', async function(e) {
+        e.preventDefault();
+        try {
+            const response = await fetch('/toggle-defense', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: JSON.stringify({})
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const button = this;
+                const statusEl = button.querySelector('#toggleStatusLogin');
+
+                if (data.defense_enabled) {
+                    button.classList.remove('defense-off-login');
+                    statusEl.textContent = 'ON';
+                } else {
+                    button.classList.add('defense-off-login');
+                    statusEl.textContent = 'OFF';
+                }
+
+                // Show visual feedback
+                button.style.animation = 'pulse 0.6s ease-out';
+                setTimeout(() => {
+                    button.style.animation = '';
+                }, 600);
+            }
+        } catch (error) {
+            console.error('Error toggling defense system:', error);
+        }
+    });
 </script>
 {% endblock %}
