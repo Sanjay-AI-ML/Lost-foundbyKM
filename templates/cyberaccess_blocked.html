@@ -440,23 +440,37 @@
         <!-- Digital Cooldown Clock -->
         <div class="timer-stage">
             <div class="timer-headline">
-                <span class="live-pulse-dot"></span>
+                <span class="live-pulse-dot" {% if strike_count >= 3 %}style="background: #ef4444; box-shadow: 0 0 10px #ef4444;"{% endif %}></span>
                 <span>
-                    QUARANTINE COOLDOWN TIMER &bull; STRIKE {{ strike_count|default:1 }}/3
-                    ({% if strike_count == 1 %}2-Minute Cooldown{% elif strike_count == 2 %}30-Minute Cooldown{% else %}Permanent Ban{% endif %})
+                    {% if strike_count >= 3 %}
+                        SECURITY LOCKDOWN &bull; STRIKE 3/3 (Permanent Blacklist)
+                    {% else %}
+                        QUARANTINE COOLDOWN TIMER &bull; STRIKE {{ strike_count|default:1 }}/3
+                        ({% if strike_count == 1 %}2-Minute Cooldown{% elif strike_count == 2 %}30-Minute Cooldown{% endif %})
+                    {% endif %}
                 </span>
             </div>
 
             <div class="timer-display">
-                <span id="lockoutTimerFormatted">{% if strike_count == 2 %}30:00{% elif strike_count >= 3 %}PERMANENT{% else %}02:00{% endif %}</span>
+                <span id="lockoutTimerFormatted" {% if strike_count >= 3 %}style="color: #ef4444; font-size: 2.2rem; letter-spacing: 2px;"{% endif %}>
+                    {% if strike_count == 2 %}30:00{% elif strike_count >= 3 %}PERMANENT{% else %}02:00{% endif %}
+                </span>
             </div>
 
-            <div class="timer-sublabel" id="lockoutTimerSeconds">
-                ({{ lockout_remaining_seconds|default:120 }} seconds remaining)
+            <div class="timer-sublabel" id="lockoutTimerSeconds" {% if strike_count >= 3 %}style="color: #f87171;"{% endif %}>
+                {% if strike_count >= 3 %}
+                    Permanent access termination. Workstation blacklisted pending administrator approval.
+                {% else %}
+                    ({{ lockout_remaining_seconds|default:120 }} seconds remaining)
+                {% endif %}
             </div>
 
             <div class="timer-lockout-policy-text">
-                Unauthorized object access attempt intercepted. Navigation channels are quarantined to protect backend integrity.
+                {% if strike_count >= 3 %}
+                    Maximum strike limit reached (Strike 3/3). Workstation has been permanently blacklisted. No automatic release timer is active.
+                {% else %}
+                    Unauthorized object access attempt intercepted. Navigation channels are quarantined to protect backend integrity.
+                {% endif %}
             </div>
 
             <div style="margin-top: 18px;">
@@ -522,6 +536,29 @@
 
         // 2. Real-Time Quarantine Countdown & Auto-Release
         (function() {
+            const strikeCount = parseInt("{{ strike_count|default:1 }}", 10);
+            const formattedEl = document.getElementById('lockoutTimerFormatted');
+            const secondsEl = document.getElementById('lockoutTimerSeconds');
+            const statusIndicator = document.getElementById('lockdownStatusIndicator');
+
+            // On Strike 3: Permanent Ban - NO timer countdown should run!
+            if (strikeCount >= 3) {
+                if (formattedEl) {
+                    formattedEl.textContent = 'PERMANENT';
+                    formattedEl.style.color = '#ef4444';
+                    formattedEl.style.fontSize = '2.2rem';
+                    formattedEl.style.letterSpacing = '2px';
+                }
+                if (secondsEl) {
+                    secondsEl.textContent = 'Permanent access termination. Workstation blacklisted pending administrator approval.';
+                    secondsEl.style.color = '#f87171';
+                }
+                if (statusIndicator) {
+                    statusIndicator.innerHTML = '<i class="fa-solid fa-ban" style="color: #ef4444;"></i> <span style="color: #ef4444;">Permanent Blacklist</span>';
+                }
+                return; // STOP! No countdown interval!
+            }
+
             const serverExpiresAt = parseInt("{{ lockout_expires_at|default:0 }}", 10);
             const storageKey = 'cyberaccess_lockout_' + encodeURIComponent("{{ subject|default:'client' }}");
             const nowSec = Math.floor(Date.now() / 1000);

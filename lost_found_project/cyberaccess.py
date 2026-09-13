@@ -281,6 +281,7 @@ def enforce_bola(
     Primary BOLA Gatekeeper for Django views.
     Returns: (is_allowed: bool, redirect_action: Optional[str], details: dict)
     """
+    request._bola_evaluated = True
     if subject is None:
         subject = get_client_subject(request)
     verb = http_verb or request.method
@@ -293,6 +294,7 @@ def enforce_bola(
         endpoint=resource_name,
         http_verb=verb,
     )
+    request._bola_result = result
 
     decision = result.get("decision", "deny")
 
@@ -442,42 +444,59 @@ class CyberAccessSecurityMiddleware:
                             subject=subject,
                         )
 
-                        rem_sec = details.get("lockout_remaining_s") or 120
-                        expires_at = details.get("lockout_expires_at") or int(now_ts + rem_sec)
-                        rem_sec = max(0, int(expires_at - now_ts))
-                        strike_count = details.get("strike_count") or 1
+                        if action == "block":
+                            rem_sec = details.get("lockout_remaining_s") or 120
+                            expires_at = details.get("lockout_expires_at") or int(now_ts + rem_sec)
+                            rem_sec = max(0, int(expires_at - now_ts))
+                            strike_count = details.get("strike_count") or 1
 
-                        get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
-                        if client_ip != subject:
-                            get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
+                            get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
+                            if client_ip != subject:
+                                get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
 
-                        client.log_timer_event(
-                            subject=subject,
-                            remaining_seconds=rem_sec,
-                            expires_at=expires_at,
-                            strike_count=strike_count,
-                            reason="Direct access to privileged administration portal intercepted"
-                        )
+                            client.log_timer_event(
+                                subject=subject,
+                                remaining_seconds=rem_sec,
+                                expires_at=expires_at,
+                                strike_count=strike_count,
+                                reason="Direct access to privileged administration portal intercepted"
+                            )
 
-                        context = {
-                            "subject": subject,
-                            "decision": "block",
-                            "score": details.get("score", 95.0),
-                            "category": details.get("category", "Attack"),
-                            "signals": details.get("signals") or ["unauthorized_admin_access_attempt", "blocked_due_to_high_risk", f"strike_{strike_count}_soft_lockout_2m"],
-                            "explanations": details.get("explanations") or [
-                                "Unauthorized direct administrative portal reconnaissance intercepted.",
-                                "Direct access to privileged administration endpoints is strictly restricted to authenticated staff.",
-                                f"Strike {strike_count}/3: Active quarantine cooldown penalty enforced across all application endpoints."
-                            ],
-                            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-                            "contact_email": "security@company.com",
-                            "lockout_remaining_seconds": rem_sec,
-                            "lockout_expires_at": expires_at,
-                            "strike_count": strike_count,
-                            "lockout_type": f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m",
-                        }
-                        return render_cyberaccess_blocked(request, context, status=403)
+                            context = {
+                                "subject": subject,
+                                "decision": "block",
+                                "score": details.get("score", 95.0),
+                                "category": details.get("category", "Attack"),
+                                "signals": details.get("signals") or ["unauthorized_admin_access_attempt", "blocked_due_to_high_risk", f"strike_{strike_count}_soft_lockout_2m"],
+                                "explanations": details.get("explanations") or [
+                                    "Unauthorized direct administrative portal reconnaissance intercepted.",
+                                    "Direct access to privileged administration endpoints is strictly restricted to authenticated staff.",
+                                    f"Strike {strike_count}/3: Active quarantine cooldown penalty enforced across all application endpoints."
+                                ],
+                                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                                "contact_email": "security@company.com",
+                                "lockout_remaining_seconds": rem_sec,
+                                "lockout_expires_at": expires_at,
+                                "strike_count": strike_count,
+                                "lockout_type": f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m",
+                            }
+                            return render_cyberaccess_blocked(request, context, status=403)
+                        else:
+                            from django.contrib import messages
+                            trial = int(details.get("trial_count", 1))
+                            max_trials = int(details.get("max_trials", 3))
+                            score = int(details.get("score", 25))
+                            if trial >= 2:
+                                messages.warning(
+                                    request,
+                                    f"⚠️ Security Alert: Repeated unauthorized administrative access detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                )
+                            else:
+                                messages.error(
+                                    request,
+                                    f"🛡️ Access Denied: Privileged administration portal is restricted to authenticated staff. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                )
+                            return HttpResponseRedirect('/?admin_denied=1')
 
                 # 3. Object-level checks are handled directly inside the respective views
                 # with graduated trial warnings (Attempt 1/3, Attempt 2/3) escalating to Strike 1 Block (Attempt 3).
@@ -517,44 +536,64 @@ class CyberAccessSecurityMiddleware:
                             subject=subject,
                         )
 
-                        rem_sec = details.get("lockout_remaining_s") or 120
-                        expires_at = details.get("lockout_expires_at") or int(now_ts + rem_sec)
-                        rem_sec = max(0, int(expires_at - now_ts))
-                        strike_count = details.get("strike_count") or 1
+                        if action == "block":
+                            rem_sec = details.get("lockout_remaining_s") or 120
+                            expires_at = details.get("lockout_expires_at") or int(now_ts + rem_sec)
+                            rem_sec = max(0, int(expires_at - now_ts))
+                            strike_count = details.get("strike_count") or 1
 
-                        get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
-                        if client_ip != subject:
-                            get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
+                            get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
+                            if client_ip != subject:
+                                get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
 
-                        client.log_timer_event(
-                            subject=subject,
-                            remaining_seconds=rem_sec,
-                            expires_at=expires_at,
-                            strike_count=strike_count,
-                            reason=f"Failed administrative credential entry for '{attempted_user}'"
-                        )
+                            client.log_timer_event(
+                                subject=subject,
+                                remaining_seconds=rem_sec,
+                                expires_at=expires_at,
+                                strike_count=strike_count,
+                                reason=f"Failed administrative credential entry for '{attempted_user}'"
+                            )
 
-                        context = {
-                            "subject": subject,
-                            "decision": "block",
-                            "score": details.get("score", 95.0),
-                            "category": details.get("category", "Attack"),
-                            "signals": details.get("signals") or ["unauthorized_admin_access_attempt", "blocked_due_to_high_risk", f"strike_{strike_count}_soft_lockout_2m"],
-                            "explanations": details.get("explanations") or [
-                                "Unauthorized administrative access probe detected.",
-                                "Direct credential brute-forcing against privileged portals is prohibited.",
-                                f"Strike {strike_count}/3: Active quarantine cooldown penalty enforced across all application endpoints."
-                            ],
-                            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-                            "contact_email": "security@company.com",
-                            "lockout_remaining_seconds": rem_sec,
-                            "lockout_expires_at": expires_at,
-                            "strike_count": strike_count,
-                            "lockout_type": f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m",
-                        }
-                        return render_cyberaccess_blocked(request, context, status=403)
+                            context = {
+                                "subject": subject,
+                                "decision": "block",
+                                "score": details.get("score", 95.0),
+                                "category": details.get("category", "Attack"),
+                                "signals": details.get("signals") or ["unauthorized_admin_access_attempt", "blocked_due_to_high_risk", f"strike_{strike_count}_soft_lockout_2m"],
+                                "explanations": details.get("explanations") or [
+                                    "Unauthorized administrative access probe detected.",
+                                    "Direct credential brute-forcing against privileged portals is prohibited.",
+                                    f"Strike {strike_count}/3: Active quarantine cooldown penalty enforced across all application endpoints."
+                                ],
+                                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                                "contact_email": "security@company.com",
+                                "lockout_remaining_seconds": rem_sec,
+                                "lockout_expires_at": expires_at,
+                                "strike_count": strike_count,
+                                "lockout_type": f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m",
+                            }
+                            return render_cyberaccess_blocked(request, context, status=403)
+                        else:
+                            from django.contrib import messages
+                            trial = int(details.get("trial_count", 1))
+                            max_trials = int(details.get("max_trials", 3))
+                            score = int(details.get("score", 25))
+                            if trial >= 2:
+                                messages.warning(
+                                    request,
+                                    f"⚠️ Security Alert: Repeated failed administrator login detected! Continued attempts will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                )
+                            else:
+                                messages.error(
+                                    request,
+                                    f"🛡️ Access Denied: Invalid administrative credentials. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                )
 
                 if response.status_code == 404:
+                    if getattr(request, '_bola_evaluated', False):
+                        # View already evaluated and recorded this BOLA event; do not double-count!
+                        return response
+
                     m = self._OBJECT_PATH_PATTERN.search(path)
                     # If this is an object access attempt (item/claim/record), show blocked page instead of 404
                     if m:
@@ -615,6 +654,22 @@ class CyberAccessSecurityMiddleware:
                                 "lockout_type": "soft_lockout_2m" if strike_count == 1 else ("hard_lockout_30m" if strike_count == 2 else "permanent_ban"),
                             }
                             return render_cyberaccess_blocked(request, context, status=403)
+                        else:
+                            from django.contrib import messages
+                            trial = int(details.get("trial_count", 1))
+                            max_trials = int(details.get("max_trials", 3))
+                            score = int(details.get("score", 25))
+                            if trial >= 2:
+                                messages.warning(
+                                    request,
+                                    f"⚠️ Security Alert: Repeated unauthorized object access detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                )
+                            else:
+                                messages.error(
+                                    request,
+                                    f"🛡️ Access Denied: Object #{obj_id} was not found. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                )
+                            return render(request, "404.html", {"trial_count": trial, "max_trials": max_trials, "risk_score": score, "missing_pk": obj_id}, status=404)
                     # For all non-quarantined 404s, render custom 404 template instead of technical debug screen
                     return render(request, "404.html", status=404)
         return response
