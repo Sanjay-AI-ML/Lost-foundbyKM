@@ -186,10 +186,19 @@ def item_detail_view(request, pk):
         score = int(details.get("score", 20))
         trial = int(details.get("trial_count", 1))
         max_trials = int(details.get("max_trials", 3))
-        if trial >= 2:
-            messages.warning(request, f"⚠️ Security Alert: Multiple non-existent object queries detected. (Trial {trial}/{max_trials} — Risk: {score}%)")
-        else:
+
+        # Only show security messages if defense is enabled
+        try:
+            from lost_found_project.attack_api import is_bola_defense_enabled
+            if is_bola_defense_enabled():
+                if trial >= 2:
+                    messages.warning(request, f"⚠️ Security Alert: Multiple non-existent object queries detected. (Trial {trial}/{max_trials} — Risk: {score}%)")
+                else:
+                    messages.error(request, f"🔍 Item #{pk} was not found. (Security Notice: Trial {trial}/{max_trials} — Risk: {score}%)")
+        except (ImportError, AttributeError):
+            # Fallback: show message if defense check fails
             messages.error(request, f"🔍 Item #{pk} was not found. (Security Notice: Trial {trial}/{max_trials} — Risk: {score}%)")
+
         return redirect('items:lost_items')
 
     # Valid item access telemetry
@@ -296,16 +305,25 @@ def edit_item_view(request, pk):
         score = int(details.get("score", 25))
         trial = int(details.get("trial_count", 1))
         max_trials = int(details.get("max_trials", 3))
-        if trial >= 2:
-            messages.warning(
-                request,
-                f"⚠️ Security Alert: Repeated unauthorized access detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
-            )
-        else:
-            messages.error(
-                request,
-                f"🛡️ Access Denied: You do not have permission to edit '{item.title}'. (Trial {trial}/{max_trials} — Risk: {score}%)"
-            )
+
+        # Only show security messages if defense is enabled
+        try:
+            from lost_found_project.attack_api import is_bola_defense_enabled
+            if is_bola_defense_enabled():
+                if trial >= 2:
+                    messages.warning(
+                        request,
+                        f"⚠️ Security Alert: Repeated unauthorized access detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                    )
+                else:
+                    messages.error(
+                        request,
+                        f"🛡️ Access Denied: You do not have permission to edit '{item.title}'. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                    )
+        except (ImportError, AttributeError):
+            # Fallback: show message if defense check fails
+            messages.error(request, f"🛡️ Access Denied: You do not have permission to edit '{item.title}'.")
+
         return redirect('items:item_detail', pk=item.pk)
 
     if request.method == 'POST':
@@ -354,16 +372,25 @@ def delete_item_view(request, pk):
         score = int(details.get("score", 30))
         trial = int(details.get("trial_count", 1))
         max_trials = int(details.get("max_trials", 3))
-        if trial >= 2:
-            messages.warning(
-                request,
-                f"⚠️ Security Alert: Unauthorized deletion attempt detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
-            )
-        else:
-            messages.error(
-                request,
-                f"🛡️ Access Denied: You do not have permission to delete '{item.title}'. (Trial {trial}/{max_trials} — Risk: {score}%)"
-            )
+
+        # Only show security messages if defense is enabled
+        try:
+            from lost_found_project.attack_api import is_bola_defense_enabled
+            if is_bola_defense_enabled():
+                if trial >= 2:
+                    messages.warning(
+                        request,
+                        f"⚠️ Security Alert: Unauthorized deletion attempt detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                    )
+                else:
+                    messages.error(
+                        request,
+                        f"🛡️ Access Denied: You do not have permission to delete '{item.title}'. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                    )
+        except (ImportError, AttributeError):
+            # Fallback: show message if defense check fails
+            messages.error(request, f"🛡️ Access Denied: You do not have permission to delete '{item.title}'.")
+
         return redirect('items:item_detail', pk=item.pk)
 
     if request.method == 'POST':

@@ -69,10 +69,19 @@ def claim_status_view(request, claim_id):
         score = int(details.get("score", 20))
         trial = int(details.get("trial_count", 1))
         max_trials = int(details.get("max_trials", 3))
-        if trial >= 2:
-            messages.warning(request, f"⚠️ Security Alert: Multiple non-existent claim probes detected. (Trial {trial}/{max_trials} — Risk: {score}%)")
-        else:
-            messages.error(request, f"Claim #{claim_id} was not found. (Security Notice: Trial {trial}/{max_trials} — Risk: {score}%)")
+
+        # Only show security messages if defense is enabled
+        try:
+            from lost_found_project.attack_api import is_bola_defense_enabled
+            if is_bola_defense_enabled():
+                if trial >= 2:
+                    messages.warning(request, f"⚠️ Security Alert: Multiple non-existent claim probes detected. (Trial {trial}/{max_trials} — Risk: {score}%)")
+                else:
+                    messages.error(request, f"Claim #{claim_id} was not found. (Security Notice: Trial {trial}/{max_trials} — Risk: {score}%)")
+        except (ImportError, AttributeError):
+            # Fallback: show message if defense check fails
+            messages.error(request, f"Claim #{claim_id} was not found.")
+
         return redirect('items:dashboard')
 
     is_claimant = (request.user == claim.claimant)
@@ -94,16 +103,25 @@ def claim_status_view(request, claim_id):
         score = int(details.get("score", 25))
         trial = int(details.get("trial_count", 1))
         max_trials = int(details.get("max_trials", 3))
-        if trial >= 2:
-            messages.warning(
-                request,
-                f"⚠️ Security Alert: Unauthorized claim inspection detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
-            )
-        else:
-            messages.error(
-                request,
-                f"🛡️ Access Denied: You are not authorized to view this private claim. (Trial {trial}/{max_trials} — Risk: {score}%)"
-            )
+
+        # Only show security messages if defense is enabled
+        try:
+            from lost_found_project.attack_api import is_bola_defense_enabled
+            if is_bola_defense_enabled():
+                if trial >= 2:
+                    messages.warning(
+                        request,
+                        f"⚠️ Security Alert: Unauthorized claim inspection detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                    )
+                else:
+                    messages.error(
+                        request,
+                        f"🛡️ Access Denied: You are not authorized to view this private claim. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                    )
+        except (ImportError, AttributeError):
+            # Fallback: show message if defense check fails
+            messages.error(request, "🛡️ Access Denied: You are not authorized to view this claim.")
+
         return redirect('items:dashboard')
 
     review_form = None
