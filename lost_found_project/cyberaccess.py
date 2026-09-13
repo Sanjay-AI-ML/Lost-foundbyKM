@@ -213,13 +213,17 @@ def get_or_register_quarantine(subject: str, remaining_seconds: int = 120, expir
     target_exp = int(expires_at) if (expires_at and expires_at > now) else int(now + max(1, remaining_seconds))
     rem = max(0, int(target_exp - now))
 
+    # CAP STRIKES AT 3 - NO STRIKE 4 OR HIGHER
+    strike_count = min(3, max(1, int(strike_count)))
+
     existing = _ACTIVE_QUARANTINES.get(subject)
     if existing and existing["expires_at"] > now:
         # If this is an escalation (higher strike count or longer lockout), upgrade the existing entry!
         if strike_count > existing.get("strike_count", 1) or target_exp > existing.get("expires_at", 0):
-            existing["strike_count"] = max(strike_count, existing.get("strike_count", 1))
+            existing["strike_count"] = min(3, max(strike_count, existing.get("strike_count", 1)))  # Cap at 3
             existing["expires_at"] = max(target_exp, existing.get("expires_at", 0))
             existing["remaining_seconds"] = max(0, int(existing["expires_at"] - now))
+            existing["timer_logged"] = False  # Reset flag so next page request logs the escalation
             return existing
         existing["remaining_seconds"] = max(0, int(existing["expires_at"] - now))
         return existing
@@ -230,6 +234,7 @@ def get_or_register_quarantine(subject: str, remaining_seconds: int = 120, expir
         "remaining_seconds": rem,
         "strike_count": strike_count,
         "started_at": int(now),
+        "timer_logged": False,  # Track if we've logged this quarantine session
     }
     _ACTIVE_QUARANTINES[subject] = entry
     return entry
@@ -395,14 +400,17 @@ class CyberAccessSecurityMiddleware:
                     strike_count = lockout.get("strike_count", 0)
 
                 if is_locked and rem_sec > 0:
-                    # Save timer event to audit timeline so refresh and navigation are logged
-                    client.log_timer_event(
-                        subject=subject,
-                        remaining_seconds=rem_sec,
-                        expires_at=expires_at,
-                        strike_count=strike_count,
-                        reason="Page navigation or refresh quarantined by perimeter defense"
-                    )
+                    # Save timer event to audit timeline ONLY ONCE per quarantine session (on first detection)
+                    quarantine_entry = _ACTIVE_QUARANTINES.get(subject) or _ACTIVE_QUARANTINES.get(client_ip)
+                    if quarantine_entry and not quarantine_entry.get("timer_logged", False):
+                        client.log_timer_event(
+                            subject=subject,
+                            remaining_seconds=rem_sec,
+                            expires_at=expires_at,
+                            strike_count=strike_count,
+                            reason="Quarantine initiated - timer monitoring active"
+                        )
+                        quarantine_entry["timer_logged"] = True
                     context = {
                         "subject": subject,
                         "decision": "block",
@@ -454,13 +462,17 @@ class CyberAccessSecurityMiddleware:
                             if client_ip != subject:
                                 get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
 
-                            client.log_timer_event(
-                                subject=subject,
-                                remaining_seconds=rem_sec,
-                                expires_at=expires_at,
-                                strike_count=strike_count,
-                                reason="Direct access to privileged administration portal intercepted"
-                            )
+                            # Log timer only once per quarantine session
+                            quarantine_entry = _ACTIVE_QUARANTINES.get(subject)
+                            if quarantine_entry and not quarantine_entry.get("timer_logged", False):
+                                client.log_timer_event(
+                                    subject=subject,
+                                    remaining_seconds=rem_sec,
+                                    expires_at=expires_at,
+                                    strike_count=strike_count,
+                                    reason="Strike escalation - unauthorized admin access"
+                                )
+                                quarantine_entry["timer_logged"] = True
 
                             context = {
                                 "subject": subject,
@@ -550,13 +562,17 @@ class CyberAccessSecurityMiddleware:
                             if client_ip != subject:
                                 get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
 
-                            client.log_timer_event(
-                                subject=subject,
-                                remaining_seconds=rem_sec,
-                                expires_at=expires_at,
-                                strike_count=strike_count,
-                                reason=f"Failed administrative credential entry for '{attempted_user}'"
-                            )
+                            # Log timer only once per quarantine session
+                            quarantine_entry = _ACTIVE_QUARANTINES.get(subject)
+                            if quarantine_entry and not quarantine_entry.get("timer_logged", False):
+                                client.log_timer_event(
+                                    subject=subject,
+                                    remaining_seconds=rem_sec,
+                                    expires_at=expires_at,
+                                    strike_count=strike_count,
+                                    reason="Strike escalation - failed admin login"
+                                )
+                                quarantine_entry["timer_logged"] = True
 
                             context = {
                                 "subject": subject,
@@ -634,14 +650,18 @@ class CyberAccessSecurityMiddleware:
                             if client_ip != subject:
                                 get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
 
-                            client = CyberAccessClient.get_instance()
-                            client.log_timer_event(
-                                subject=subject,
-                                remaining_seconds=rem_sec,
-                                expires_at=expires_at,
-                                strike_count=strike_count,
-                                reason="Object enumeration attack threshold exceeded"
-                            )
+                            # Log timer only once per quarantine session
+                            quarantine_entry = _ACTIVE_QUARANTINES.get(subject)
+                            if quarantine_entry and not quarantine_entry.get("timer_logged", False):
+                                client = CyberAccessClient.get_instance()
+                                client.log_timer_event(
+                                    subject=subject,
+                                    remaining_seconds=rem_sec,
+                                    expires_at=expires_at,
+                                    strike_count=strike_count,
+                                    reason="Strike escalation - enumeration attack"
+                                )
+                                quarantine_entry["timer_logged"] = True
 
                             context = {
                                 "subject": subject,
@@ -721,14 +741,18 @@ class CyberAccessSecurityMiddleware:
                 if client_ip != subject:
                     get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
 
-            client = CyberAccessClient.get_instance()
-            client.log_timer_event(
-                subject=subject,
-                remaining_seconds=rem_sec,
-                expires_at=expires_at,
-                strike_count=strike_count,
-                reason="Object enumeration probe intercepted"
-            )
+            # Log timer only once per quarantine session
+            quarantine_entry = _ACTIVE_QUARANTINES.get(subject)
+            if quarantine_entry and not quarantine_entry.get("timer_logged", False):
+                client = CyberAccessClient.get_instance()
+                client.log_timer_event(
+                    subject=subject,
+                    remaining_seconds=rem_sec,
+                    expires_at=expires_at,
+                    strike_count=strike_count,
+                    reason="Strike escalation - object enumeration probe"
+                )
+                quarantine_entry["timer_logged"] = True
 
             context = {
                 "subject": subject,
