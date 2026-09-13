@@ -23,13 +23,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Ambient Motion Video Background (Full-Screen, Centered, Fixed Layer) -->
-    <div class="video-bg-container" id="videoBgContainer" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; overflow: hidden; z-index: -1; pointer-events: none;">
-        <video class="video-bg-media" id="bgVideo" autoplay muted loop playsinline preload="auto" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; pointer-events: none; opacity: 0.65; filter: saturate(1.2) brightness(0.85);">
-            <source src="{% static 'videos/background.mp4' %}" type="video/mp4">
-        </video>
-        <div class="video-bg-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at 50% 40%, rgba(9, 10, 15, 0.35) 0%, rgba(9, 10, 15, 0.75) 100%); pointer-events: none;"></div>
-    </div>
+    <!-- Ambient Motion Video Background Disabled -->
 
     <div class="app-wrapper" style="position: relative; z-index: 10;">
         <!-- Navigation Bar Component -->
