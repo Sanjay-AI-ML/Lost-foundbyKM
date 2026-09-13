@@ -37,7 +37,6 @@ def trigger_attack(request):
                     url=url,
                     reason=f"Malicious pattern detected",
                     severity="high",
-                    subject="alice",
                     context="form_submission"
                 )
 
@@ -72,7 +71,6 @@ def trigger_attack(request):
                     url=url,
                     reason=f"Blocked in claim submission",
                     severity="high",
-                    subject="bob",
                     context="claim_form"
                 )
 
@@ -97,13 +95,12 @@ def trigger_attack(request):
                 ("https://example.com/bad.exe", "charlie", "item_form"),
             ]
 
-            for url, subject, context in mixed_attacks:
+            for url, context_val, context_type in mixed_attacks:
                 log_blocked_url(
                     url=url,
                     reason=f"Blocked across endpoints",
                     severity="medium",
-                    subject=subject,
-                    context=context
+                    context=context_type
                 )
 
             return JsonResponse({
@@ -119,13 +116,12 @@ def trigger_attack(request):
                 ("https://tinyurl.com/probe2", "eve", "canary_probe"),
             ]
 
-            for url, subject, context in canary_attacks:
+            for url, context_val, context_type in canary_attacks:
                 log_blocked_url(
                     url=url,
                     reason=f"Honeypot/Canary accessed - pre-attack reconnaissance",
                     severity="critical",
-                    subject=subject,
-                    context=context
+                    context=context_type
                 )
 
             return JsonResponse({
