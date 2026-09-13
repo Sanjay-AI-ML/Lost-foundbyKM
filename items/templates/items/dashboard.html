@@ -28,6 +28,31 @@
             </div>
         </div>
 
+        <!-- Defense Toggle Card -->
+        <div class="dashboard-card mb-4">
+            <div class="dashboard-card-header">
+                <h3><i class="fa-solid fa-shield"></i> Security Control</h3>
+            </div>
+            <div class="dashboard-card-body">
+                <div class="defense-toggle-container">
+                    <div class="defense-toggle-info">
+                        <h4>BOLA Defense System</h4>
+                        <p>Toggle the security defense system ON/OFF to demonstrate protection vs. vulnerability</p>
+                    </div>
+                    <div class="defense-toggle-control">
+                        <button class="defense-toggle-btn" id="dashboardToggleBtn" type="button" title="Toggle BOLA Defense System">
+                            <span class="defense-label">🛡️ Defense Status</span>
+                            <span class="defense-status" id="dashboardToggleStatus">ON</span>
+                        </button>
+                        <div class="defense-warning defense-hidden" id="dashboardDefenseWarning">
+                            <span class="warning-icon">⚠️</span>
+                            <span class="warning-text">VULNERABLE MODE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Metric Stat Cards -->
         <div class="dashboard-metrics-grid">
             <div class="metric-card">
@@ -168,4 +193,212 @@
         </div>
     </main>
 </div>
+
+<script>
+    // Initialize defense state on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusEl = document.getElementById('dashboardToggleStatus');
+        const button = document.getElementById('dashboardToggleBtn');
+        const warningEl = document.getElementById('dashboardDefenseWarning');
+
+        // Try to get initial state from server
+        fetch('/toggle-defense-status', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(r => r.json())
+        .catch(() => ({ defense_enabled: true }))
+        .then(data => {
+            if (data.defense_enabled) {
+                button?.classList.remove('defense-off');
+                statusEl.textContent = 'ON';
+                warningEl.classList.add('defense-hidden');
+            } else {
+                button?.classList.add('defense-off');
+                statusEl.textContent = 'OFF';
+                warningEl.classList.remove('defense-hidden');
+            }
+        });
+    });
+
+    // Defense Toggle Handler
+    document.getElementById('dashboardToggleBtn')?.addEventListener('click', async function(e) {
+        e.preventDefault();
+        try {
+            const response = await fetch('/toggle-defense', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: JSON.stringify({})
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const button = this;
+                const statusEl = document.getElementById('dashboardToggleStatus');
+                const warningEl = document.getElementById('dashboardDefenseWarning');
+
+                if (data.defense_enabled) {
+                    button.classList.remove('defense-off');
+                    statusEl.textContent = 'ON';
+                    warningEl.classList.add('defense-hidden');
+                } else {
+                    button.classList.add('defense-off');
+                    statusEl.textContent = 'OFF';
+                    warningEl.classList.remove('defense-hidden');
+                }
+
+                button.style.animation = 'pulse 0.6s ease-out';
+                setTimeout(() => {
+                    button.style.animation = '';
+                }, 600);
+            }
+        } catch (error) {
+            console.error('Error toggling defense system:', error);
+        }
+    });
+</script>
+
+<style>
+    .defense-toggle-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2rem;
+    }
+
+    .defense-toggle-info h4 {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+        color: #00bfff;
+    }
+
+    .defense-toggle-info p {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+    }
+
+    .defense-toggle-control {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .defense-toggle-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.75rem 1.5rem;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: 2px solid #34d399;
+        border-radius: 20px;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(52, 211, 153, 0.2);
+        white-space: nowrap;
+    }
+
+    .defense-toggle-btn:hover {
+        box-shadow: 0 0 30px rgba(16, 185, 129, 0.7), 0 0 60px rgba(52, 211, 153, 0.4);
+        transform: translateY(-2px);
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+
+    .defense-label {
+        font-size: 0.8rem;
+        font-weight: 800;
+    }
+
+    .defense-status {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        font-weight: 800;
+        font-size: 0.7rem;
+        min-width: 32px;
+        text-align: center;
+    }
+
+    .defense-toggle-btn.defense-off {
+        background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+        border-color: #fb7185;
+        box-shadow: 0 0 20px rgba(244, 63, 94, 0.4), 0 0 40px rgba(251, 113, 133, 0.2);
+    }
+
+    .defense-toggle-btn.defense-off:hover {
+        box-shadow: 0 0 30px rgba(244, 63, 94, 0.7), 0 0 60px rgba(251, 113, 133, 0.4);
+        background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+    }
+
+    .defense-warning {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+        border: 2px solid #fb7185;
+        border-radius: 16px;
+        box-shadow: 0 0 20px rgba(244, 63, 94, 0.6), 0 0 40px rgba(251, 113, 133, 0.3);
+        animation: vulnerabilityPulse 1s ease-in-out infinite;
+    }
+
+    .defense-warning.defense-hidden {
+        display: none;
+    }
+
+    .warning-icon {
+        font-size: 1rem;
+    }
+
+    .warning-text {
+        font-size: 0.8rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #ffffff;
+        text-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    }
+
+    @keyframes vulnerabilityPulse {
+        0%, 100% {
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.6), 0 0 40px rgba(251, 113, 133, 0.3);
+            opacity: 1;
+        }
+        50% {
+            box-shadow: 0 0 30px rgba(244, 63, 94, 0.9), 0 0 60px rgba(251, 113, 133, 0.5);
+            opacity: 0.9;
+        }
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    @media (max-width: 768px) {
+        .defense-toggle-container {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .defense-toggle-control {
+            width: 100%;
+            justify-content: flex-start;
+        }
+    }
+</style>
+
 {% endblock %}
