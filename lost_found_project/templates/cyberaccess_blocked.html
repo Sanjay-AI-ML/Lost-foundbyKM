@@ -4,31 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CRITICAL SECURITY INTERCEPT - CyberAccess Active Defense</title>
+    <title>403 - Access Quarantined | CyberAccess</title>
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Font Awesome Icons -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <style>
-        :root {
-            --bg-base: #06080e;
-            --panel-bg: rgba(13, 17, 26, 0.92);
-            --panel-border: rgba(239, 68, 68, 0.35);
-            --crimson: #ef4444;
-            --crimson-glow: rgba(239, 68, 68, 0.45);
-            --amber: #f59e0b;
-            --emerald: #10b981;
-            --cyan: #06b6d4;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --text-sub: #64748b;
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -36,1036 +22,241 @@
         }
 
         body {
-            background-color: var(--bg-base);
-            color: var(--text-main);
+            background: #080b11;
+            color: #f1f5f9;
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
-            width: 100vw;
-            overflow-x: hidden;
-            overflow-y: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
             position: relative;
-            background-image: 
-                radial-gradient(ellipse 90% 50% at 50% 0%, rgba(185, 28, 28, 0.28) 0%, transparent 70%),
-                radial-gradient(circle 600px at 50% 50%, rgba(220, 38, 38, 0.08) 0%, transparent 100%),
-                linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+            overflow: hidden;
         }
 
-        /* Ambient Video / Glow Layer */
-        .threat-ambient-layer {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            z-index: 1;
+        /* Subtle ambient glow in center */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.12) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             pointer-events: none;
         }
 
-        .threat-ambient-layer video {
-            position: absolute;
-            top: 0;
-            left: 0;
+        /* Clean Minimal Block Card */
+        .block-card {
             width: 100%;
-            height: 100%;
-            object-fit: cover;
-            opacity: 0.18;
-            filter: saturate(0.5) brightness(0.35) contrast(1.3);
-        }
-
-        /* Top Military-Grade Hazard Ribbon */
-        .threat-hazard-ribbon {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: linear-gradient(90deg, #450a0a 0%, #b91c1c 30%, #ef4444 50%, #b91c1c 70%, #450a0a 100%);
-            color: #ffffff;
-            padding: 8px 24px;
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 4px 30px rgba(220, 38, 38, 0.45);
-            border-bottom: 1px solid rgba(254, 202, 202, 0.35);
-        }
-
-        .hazard-left, .hazard-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .hazard-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 800;
-        }
-
-        .hazard-pulse-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #ffffff;
-            box-shadow: 0 0 10px #ffffff;
-            animation: pulseGlow 1s infinite alternate;
-        }
-
-        .hazard-badge {
-            background: rgba(0, 0, 0, 0.35);
-            padding: 3px 10px;
-            border-radius: 4px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            font-size: 10px;
-            letter-spacing: 1px;
-        }
-
-        @keyframes pulseGlow {
-            from { opacity: 0.5; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1.2); }
-        }
-
-        /* Main Viewport Container */
-        .takeover-viewport {
-            position: relative;
-            z-index: 20;
-            min-height: calc(100vh - 38px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 36px 24px 60px 24px;
-        }
-
-        /* Master Tactical Console Card */
-        .takeover-card {
-            width: 100%;
-            max-width: 1140px;
-            background: var(--panel-bg);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid var(--panel-border);
+            max-width: 460px;
+            background: rgba(15, 20, 30, 0.95);
+            border: 1px solid rgba(239, 68, 68, 0.3);
             border-radius: 20px;
+            padding: 40px 36px;
+            text-align: center;
             box-shadow: 
-                0 0 70px rgba(239, 68, 68, 0.22),
-                0 30px 90px rgba(0, 0, 0, 0.85),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                0 0 40px rgba(239, 68, 68, 0.15),
+                0 25px 60px rgba(0, 0, 0, 0.7);
             position: relative;
-            overflow: hidden;
-            padding: 36px 42px;
+            z-index: 10;
         }
 
-        /* Top Edge Cyber Line */
-        .takeover-card::before {
+        /* Top Accent Line */
+        .block-card::after {
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, #ef4444 30%, #f59e0b 50%, #ef4444 70%, transparent);
-            box-shadow: 0 0 16px #ef4444;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #ef4444, transparent);
         }
 
-        /* Header Layout */
-        .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 24px;
-            padding-bottom: 24px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            margin-bottom: 28px;
-            flex-wrap: wrap;
-        }
-
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-        }
-
-        .shield-emblem {
-            width: 64px;
-            height: 64px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.1) 100%);
-            border: 2px solid var(--crimson);
+        /* Shield Icon */
+        .icon-wrap {
+            width: 68px;
+            height: 68px;
+            margin: 0 auto 20px auto;
+            border-radius: 18px;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1.5px solid rgba(239, 68, 68, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 28px;
-            color: var(--crimson);
-            box-shadow: 0 0 30px rgba(239, 68, 68, 0.4), inset 0 0 15px rgba(239, 68, 68, 0.2);
-            flex-shrink: 0;
+            font-size: 30px;
+            color: #ef4444;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.25);
         }
 
-        .header-titles h1 {
+        /* Titles */
+        .title {
             font-family: 'Outfit', sans-serif;
-            font-size: 28px;
-            font-weight: 800;
+            font-size: 24px;
+            font-weight: 700;
             color: #ffffff;
-            letter-spacing: -0.5px;
-            line-height: 1.2;
-            margin-top: 4px;
+            margin-bottom: 8px;
+            letter-spacing: -0.3px;
         }
 
-        .header-subtag {
+        .subtitle {
+            font-size: 14px;
+            color: #94a3b8;
+            line-height: 1.5;
+            margin-bottom: 28px;
+        }
+
+        /* Countdown Box */
+        .timer-box {
+            background: rgba(220, 38, 38, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 28px;
+        }
+
+        .timer-tag {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             letter-spacing: 1.5px;
             text-transform: uppercase;
             color: #f87171;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
-            gap: 8px;
-        }
-
-        /* Threat Gauge Badge */
-        .threat-gauge-badge {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            background: rgba(10, 14, 23, 0.85);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            border-radius: 14px;
-            padding: 10px 18px;
-            box-shadow: 0 0 25px rgba(239, 68, 68, 0.2);
-        }
-
-        .gauge-metric {
-            text-align: right;
-        }
-
-        .gauge-label {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--text-sub);
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
-        }
-
-        .gauge-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 24px;
-            font-weight: 900;
-            color: #ffffff;
-            line-height: 1.1;
-        }
-
-        .gauge-category-tag {
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            display: inline-flex;
-            align-items: center;
+            justify-content: center;
             gap: 6px;
         }
 
-        .tag-attack {
-            background: rgba(239, 68, 68, 0.2);
-            color: #fca5a5;
-            border: 1px solid rgba(239, 68, 68, 0.5);
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        .timer-tag .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 8px #ef4444;
+            animation: pulse 1s infinite alternate;
         }
 
-        .tag-suspicious {
-            background: rgba(245, 158, 11, 0.2);
-            color: #fde68a;
-            border: 1px solid rgba(245, 158, 11, 0.5);
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+        @keyframes pulse {
+            from { opacity: 0.4; }
+            to { opacity: 1; }
         }
 
-        .tag-normal {
-            background: rgba(16, 185, 129, 0.2);
-            color: #a7f3d0;
-            border: 1px solid rgba(16, 185, 129, 0.5);
-        }
-
-        /* 2-Column Tactical Grid */
-        .tactical-grid {
-            display: grid;
-            grid-template-columns: 460px 1fr;
-            gap: 32px;
-            margin-bottom: 28px;
-        }
-
-        @media (max-width: 1024px) {
-            .tactical-grid {
-                grid-template-columns: 1fr;
-                gap: 24px;
-            }
-        }
-
-        /* LEFT COLUMN: Quarantine Hub */
-        .quarantine-hub {
-            display: flex;
-            flex-col;
-            gap: 20px;
-            flex-direction: column;
-        }
-
-        /* Circular Countdown HUD */
-        .countdown-hud-stage {
-            background: linear-gradient(180deg, rgba(220, 38, 38, 0.12) 0%, rgba(15, 20, 31, 0.7) 100%);
-            border: 1.5px solid rgba(239, 68, 68, 0.45);
-            border-radius: 16px;
-            padding: 24px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            box-shadow: inset 0 0 40px rgba(220, 38, 38, 0.15);
-        }
-
-        .hud-header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+        .timer-number {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
+            font-size: 44px;
             font-weight: 800;
-            letter-spacing: 1.8px;
-            text-transform: uppercase;
-            color: #fca5a5;
-            margin-bottom: 18px;
-        }
-
-        .hud-circle-wrap {
-            position: relative;
-            width: 170px;
-            height: 170px;
-            margin: 0 auto 16px auto;
-        }
-
-        .hud-circle-svg {
-            transform: rotate(-90deg);
-            width: 100%;
-            height: 100%;
-        }
-
-        .hud-track {
-            fill: none;
-            stroke: rgba(255, 255, 255, 0.08);
-            stroke-width: 8;
-        }
-
-        .hud-progress {
-            fill: none;
-            stroke: var(--crimson);
-            stroke-width: 8;
-            stroke-linecap: round;
-            stroke-dasharray: 440;
-            stroke-dashoffset: 0;
-            transition: stroke-dashoffset 1s linear, stroke 0.4s ease;
-            filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.7));
-        }
-
-        .hud-center-content {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .digital-clock {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 38px;
-            font-weight: 900;
             color: #ffffff;
             letter-spacing: 2px;
-            text-shadow: 0 0 25px rgba(239, 68, 68, 0.7);
+            text-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
             line-height: 1;
         }
 
-        .clock-labels {
-            display: flex;
-            gap: 22px;
-            margin-top: 4px;
+        .timer-sub {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 6px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            color: var(--text-sub);
-            text-transform: uppercase;
         }
 
-        .timer-info-text {
-            font-size: 13px;
-            color: #cbd5e1;
-            line-height: 1.5;
-            margin-bottom: 20px;
-            max-width: 380px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        /* 3-Strike Escalation Bar */
-        .strike-ladder {
-            background: rgba(10, 14, 23, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        /* Primary Action Button */
+        .btn-home {
+            width: 100%;
+            padding: 13px 24px;
             border-radius: 12px;
-            padding: 14px 16px;
-            margin-bottom: 20px;
-        }
-
-        .strike-ladder-title {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1.2px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .strike-steps {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px;
-        }
-
-        .strike-step {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            padding: 8px 6px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .strike-step.active {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: var(--crimson);
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
-        }
-
-        .step-num {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            font-weight: 800;
+            background: #ef4444;
             color: #ffffff;
-            display: block;
-        }
-
-        .step-label {
-            font-size: 9px;
-            color: var(--text-muted);
-            margin-top: 2px;
-            display: block;
-        }
-
-        .strike-step.active .step-num {
-            color: #fca5a5;
-        }
-
-        .strike-step.active .step-label {
-            color: #f87171;
-            font-weight: 600;
-        }
-
-        /* Sleek Hackathon Fast Release Button */
-        .hackathon-action-wrap {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .btn-hackathon-clear {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%);
-            border: 1.5px solid rgba(16, 185, 129, 0.7);
-            color: #6ee7b7;
-            padding: 13px 20px;
-            border-radius: 12px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 13px;
-            font-weight: 800;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
+            border: none;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 18px rgba(239, 68, 68, 0.35);
             text-decoration: none;
-            width: 100%;
+            margin-bottom: 18px;
         }
 
-        .btn-hackathon-clear:hover {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.35) 0%, rgba(6, 182, 212, 0.35) 100%);
-            border-color: #34d399;
-            color: #ffffff;
-            box-shadow: 0 6px 30px rgba(16, 185, 129, 0.45);
-            transform: translateY(-2px);
+        .btn-home:hover {
+            background: #dc2626;
+            box-shadow: 0 6px 24px rgba(239, 68, 68, 0.5);
+            transform: translateY(-1px);
         }
 
-        .btn-hackathon-clear:active {
+        .btn-home:active {
             transform: translateY(0);
         }
 
-        .btn-caption {
+        /* Subtle Footer */
+        .footer-note {
             font-size: 11px;
-            color: var(--text-sub);
-            text-align: center;
+            color: #475569;
             font-family: 'JetBrains Mono', monospace;
-        }
-
-        /* Hard Back Button Lockdown Banner */
-        .anti-tamper-pill {
-            background: rgba(220, 38, 38, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.35);
-            border-radius: 10px;
-            padding: 12px 16px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            transition: all 0.3s ease;
-        }
-
-        .anti-tamper-pill i {
-            color: var(--crimson);
-            font-size: 16px;
-        }
-
-        .anti-tamper-title {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #fca5a5;
-        }
-
-        .anti-tamper-desc {
-            font-size: 12px;
-            color: #94a3b8;
-            line-height: 1.4;
-            margin-top: 2px;
-        }
-
-        /* RIGHT COLUMN: Forensics & Intelligence */
-        .forensics-hud {
-            display: flex;
-            flex-direction: column;
-            gap: 22px;
-        }
-
-        /* Threat Overview Banner */
-        .overview-box {
-            background: rgba(239, 68, 68, 0.08);
-            border-left: 4px solid var(--crimson);
-            border-radius: 0 12px 12px 0;
-            padding: 18px 22px;
-        }
-
-        .overview-box h3 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 17px;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .overview-box p {
-            font-size: 13px;
-            color: #cbd5e1;
-            line-height: 1.6;
-        }
-
-        /* Metadata 2x2 Grid */
-        .meta-cards-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-        }
-
-        .meta-card {
-            background: rgba(10, 14, 23, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            border-radius: 12px;
-            padding: 14px 18px;
-        }
-
-        .meta-card-label {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1.2px;
-            color: var(--text-sub);
-            margin-bottom: 6px;
-        }
-
-        .meta-card-val {
-            font-size: 15px;
-            font-weight: 700;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            word-break: break-all;
-        }
-
-        /* Signals Section */
-        .forensic-section-title {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-muted);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .signals-flex-wrap {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .signal-chip {
-            background: rgba(220, 38, 38, 0.14);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #fca5a5;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            letter-spacing: 0.3px;
-        }
-
-        /* Diagnostic Explanation Log */
-        .diagnostic-terminal {
-            background: #080a10;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 16px 20px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-        }
-
-        .terminal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            color: var(--text-sub);
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            padding-bottom: 10px;
-            margin-bottom: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .diagnostic-list {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .diagnostic-item {
-            color: #cbd5e1;
-            line-height: 1.6;
-            display: flex;
-            gap: 12px;
-        }
-
-        .diagnostic-item i {
-            color: var(--crimson);
-            margin-top: 3px;
-            font-size: 12px;
-            flex-shrink: 0;
-        }
-
-        /* Footer Section */
-        .card-footer {
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            padding-top: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            color: var(--text-sub);
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-
-        .footer-left {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .timestamp-tag {
-            color: #cbd5e1;
-            background: rgba(255, 255, 255, 0.04);
-            padding: 4px 10px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .lockdown-badge {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.35);
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-weight: 700;
-            letter-spacing: 0.8px;
-            text-transform: uppercase;
-            display: inline-flex;
-            align-items: center;
+            justify-content: center;
             gap: 8px;
         }
     </style>
 </head>
 <body>
-    <!-- Top Military-Grade Hazard Ribbon -->
-    <div class="threat-hazard-ribbon">
-        <div class="hazard-left">
-            <span class="hazard-pulse-dot"></span>
-            <div class="hazard-title">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <span>CRITICAL SECURITY INTERCEPT &bull; CYBERACCESS ACTIVE DEFENSE SYSTEM (OWASP API1:2023)</span>
-            </div>
+    <div class="block-card">
+        <!-- Shield Icon -->
+        <div class="icon-wrap">
+            <i class="fa-solid fa-shield-halved"></i>
         </div>
-        <div class="hazard-right">
-            <span class="hazard-badge"><i class="fa-solid fa-shield-halved"></i> PERIMETER QUARANTINE ACTIVE</span>
+
+        <!-- Title -->
+        <h1 class="title">Access Quarantined</h1>
+        <p class="subtitle">
+            Suspicious activity was detected on your session. Direct access has been temporarily restricted by CyberAccess.
+        </p>
+
+        <!-- Clean Timer Box -->
+        <div class="timer-box">
+            <div class="timer-tag">
+                <span class="dot"></span>
+                <span>Quarantine Cooldown</span>
+            </div>
+            <div class="timer-number" id="lockoutTimerFormatted">02:00</div>
+            <div class="timer-sub" id="lockoutTimerSeconds">120 seconds remaining</div>
         </div>
-    </div>
 
-    <!-- Ambient Motion Video Layer -->
-    <div class="threat-ambient-layer">
-        <video autoplay muted loop playsinline preload="auto">
-            <source src="{% static 'videos/background.mp4' %}" type="video/mp4">
-        </video>
-    </div>
+        <!-- Single Clean Return Home Button -->
+        <button type="button" onclick="hackathonBypass()" class="btn-home">
+            <i class="fa-solid fa-house"></i>
+            <span>Return to Home</span>
+        </button>
 
-    <!-- Main Takeover Viewport -->
-    <div class="takeover-viewport">
-        <div class="takeover-card">
-            <!-- Header Section -->
-            <div class="card-header">
-                <div class="header-brand">
-                    <div class="shield-emblem">
-                        <i class="fa-solid fa-shield-virus"></i>
-                    </div>
-                    <div class="header-titles">
-                        <div class="header-subtag">
-                            <i class="fa-solid fa-circle-radiation"></i>
-                            <span>Zero-Trust Perimeter Isolation Active</span>
-                        </div>
-                        <h1>Threat Quarantined: Access Revoked</h1>
-                    </div>
-                </div>
-
-                <!-- Threat Rating HUD -->
-                <div class="threat-gauge-badge">
-                    <div class="gauge-metric">
-                        <div class="gauge-label">Behavioral Risk Score</div>
-                        <div class="gauge-value">{{ score|default:"100.0" }}</div>
-                    </div>
-                    {% if score >= 70 or not score %}
-                        <div class="gauge-category-tag tag-attack">
-                            <i class="fa-solid fa-skull-crossbones"></i>
-                            <span>{{ category|default:"Attack" }}</span>
-                        </div>
-                    {% elif score >= 35 %}
-                        <div class="gauge-category-tag tag-suspicious">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span>{{ category|default:"Suspicious" }}</span>
-                        </div>
-                    {% else %}
-                        <div class="gauge-category-tag tag-normal">
-                            <i class="fa-solid fa-circle-check"></i>
-                            <span>{{ category|default:"Monitored" }}</span>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- 2-Column Tactical Console Layout -->
-            <div class="tactical-grid">
-                <!-- ================= LEFT COLUMN: Countdown & Quarantine Hub ================= -->
-                <div class="quarantine-hub">
-                    <!-- Circular Countdown HUD -->
-                    <div class="countdown-hud-stage">
-                        <div class="hud-header">
-                            <i class="fa-solid fa-stopwatch"></i>
-                            <span>QUARANTINE COOLDOWN TIMER</span>
-                        </div>
-
-                        <div class="hud-circle-wrap">
-                            <svg class="hud-circle-svg" viewBox="0 0 160 160">
-                                <circle class="hud-track" cx="80" cy="80" r="70" />
-                                <circle class="hud-progress" id="timerProgressCircle" cx="80" cy="80" r="70" />
-                            </svg>
-                            <div class="hud-center-content">
-                                <div class="digital-clock" id="lockoutTimerFormatted">--:--</div>
-                                <div class="clock-labels">
-                                    <span>MIN</span>
-                                    <span>SEC</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <p class="timer-info-text" id="lockoutTimerSeconds">
-                            ({{ lockout_remaining_seconds|default:120 }} seconds remaining)
-                        </p>
-
-                        <!-- 3-Strike Escalation Bar -->
-                        <div class="strike-ladder">
-                            <div class="strike-ladder-title">
-                                <span>3-Strike Adaptive Lockout Policy</span>
-                                <span>STRIKE {{ strike_count|default:1 }}/3</span>
-                            </div>
-                            <div class="strike-steps">
-                                <div class="strike-step {% if strike_count == 1 or not strike_count %}active{% endif %}">
-                                    <span class="step-num">STRIKE 1</span>
-                                    <span class="step-label">2m Soft Lock</span>
-                                </div>
-                                <div class="strike-step {% if strike_count == 2 %}active{% endif %}">
-                                    <span class="step-num">STRIKE 2</span>
-                                    <span class="step-label">30m Hard Lock</span>
-                                </div>
-                                <div class="strike-step {% if strike_count >= 3 %}active{% endif %}">
-                                    <span class="step-num">STRIKE 3</span>
-                                    <span class="step-label">Admin Ban</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Sleek Hackathon Fast-Release Action Button -->
-                        <div class="hackathon-action-wrap">
-                            <button type="button" onclick="hackathonBypass()" class="btn-hackathon-clear" title="Instantly clear quarantine and restore full access for live presentation">
-                                <i class="fa-solid fa-bolt"></i>
-                                <span>Instant Clearance (Hackathon Demo)</span>
-                                <i class="fa-solid fa-arrow-right"></i>
-                            </button>
-                            <span class="btn-caption">1-Click bypass restores all access and redirects to home</span>
-                        </div>
-                    </div>
-
-                    <!-- Hard Back Button Lockdown Alert -->
-                    <div class="anti-tamper-pill" id="backNavLockoutBanner">
-                        <i class="fa-solid fa-shield-halved"></i>
-                        <div>
-                            <div class="anti-tamper-title">Navigation Trap Active</div>
-                            <div class="anti-tamper-desc">Browser Back button &amp; history navigation are intercepted to prevent duplicate payload re-execution.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ================= RIGHT COLUMN: Forensics & Intelligence ================= -->
-                <div class="forensics-hud">
-                    <!-- Threat Overview Summary -->
-                    <div class="overview-box">
-                        <h3><i class="fa-solid fa-triangle-exclamation" style="color: var(--crimson);"></i> Perimeter Breach Intercepted</h3>
-                        <p>
-                            High-velocity object enumeration, horizontal privilege escalation, or unauthorized BOLA vectors detected.
-                            Perimeter isolation protocol initiated: your client identity is quarantined to protect backend data integrity.
-                        </p>
-                    </div>
-
-                    <!-- Metadata Grid -->
-                    <div class="meta-cards-grid">
-                        <div class="meta-card">
-                            <div class="meta-card-label">Quarantined Subject</div>
-                            <div class="meta-card-val">
-                                <i class="fa-solid fa-user-shield" style="color: var(--crimson);"></i>
-                                <span>{{ subject|default:"anonymous_client" }}</span>
-                            </div>
-                        </div>
-                        <div class="meta-card">
-                            <div class="meta-card-label">Protection Standard</div>
-                            <div class="meta-card-val">
-                                <i class="fa-solid fa-gavel" style="color: var(--amber);"></i>
-                                <span>OWASP API1:2023</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Tripped Security Signals -->
-                    <div>
-                        <div class="forensic-section-title">
-                            <i class="fa-solid fa-bolt-lightning" style="color: var(--crimson);"></i>
-                            <span>Tripped Behavioral Telemetry Signals</span>
-                        </div>
-                        <div class="signals-flex-wrap">
-                            {% if signals %}
-                                {% for sig in signals %}
-                                    <span class="signal-chip">
-                                        {% if "admin" in sig %}
-                                            <i class="fa-solid fa-user-lock" style="color: #f87171;"></i>
-                                        {% elif "canary" in sig %}
-                                            <i class="fa-solid fa-shield-cat" style="color: #fbbf24;"></i>
-                                        {% elif "diversity" in sig or "endpoint" in sig %}
-                                            <i class="fa-solid fa-network-wired" style="color: #38bdf8;"></i>
-                                        {% elif "anomaly" in sig or "ml" in sig %}
-                                            <i class="fa-solid fa-robot" style="color: #a78bfa;"></i>
-                                        {% else %}
-                                            <i class="fa-solid fa-circle-exclamation" style="color: #f87171;"></i>
-                                        {% endif %}
-                                        <span>{{ sig }}</span>
-                                    </span>
-                                {% endfor %}
-                            {% else %}
-                                <span class="signal-chip"><i class="fa-solid fa-circle-exclamation"></i> temporarily_blocked</span>
-                                <span class="signal-chip"><i class="fa-solid fa-clock"></i> strike_1_soft_lockout_2m</span>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Diagnostic Analysis Terminal -->
-                    <div>
-                        <div class="forensic-section-title">
-                            <i class="fa-solid fa-terminal" style="color: var(--cyan);"></i>
-                            <span>Behavioral Engine Diagnostic Logs</span>
-                        </div>
-                        <div class="diagnostic-terminal">
-                            <div class="terminal-header">
-                                <span><i class="fa-solid fa-code-compare"></i> Real-Time SOC Audit Evaluation</span>
-                                <span>CONFIDENCE: 99.4%</span>
-                            </div>
-                            <ul class="diagnostic-list">
-                                {% if explanations %}
-                                    {% for exp in explanations %}
-                                        <li class="diagnostic-item">
-                                            <i class="fa-solid fa-angles-right"></i>
-                                            <span>{{ exp }}</span>
-                                        </li>
-                                    {% endfor %}
-                                {% else %}
-                                    <li class="diagnostic-item">
-                                        <i class="fa-solid fa-angles-right"></i>
-                                        <span>Your identity has been temporarily quarantined due to suspicious object enumeration patterns.</span>
-                                    </li>
-                                    <li class="diagnostic-item">
-                                        <i class="fa-solid fa-angles-right"></i>
-                                        <span>Strike 1/3: 2-Minute Soft Lockout penalty enforced across all application endpoints.</span>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card Footer -->
-            <div class="card-footer">
-                <div class="footer-left">
-                    <span>Incident Timestamp:</span>
-                    <span class="timestamp-tag">{{ timestamp|default:"2026-09-13 UTC" }}</span>
-                </div>
-                <div class="lockdown-badge" id="lockdownStatusIndicator">
-                    <i class="fa-solid fa-lock"></i>
-                    <span>Workstation Quarantined &bull; Zero Navigation</span>
-                </div>
-            </div>
+        <!-- Minimal Footer -->
+        <div class="footer-note">
+            <span>CyberAccess OWASP API1 Defense</span>
+            <span>&bull;</span>
+            <span>Strike {{ strike_count|default:1 }}/3</span>
         </div>
     </div>
 
-    <!-- Real-Time Quarantine Countdown, Back Navigation Trap & Auto-Release Engine -->
+    <!-- Countdown & Bypass Script -->
     <script>
-        // 1. HARD BROWSER BACK BUTTON LOCKOUT TRAP
+        // 1. Trap browser Back button to prevent duplicate re-execution
         (function() {
             try {
                 window.history.replaceState(null, document.title, window.location.href);
                 window.history.pushState(null, document.title, window.location.href);
-                window.history.pushState(null, document.title, window.location.href);
             } catch(e) {}
-
-            function triggerBackBlockedAlert() {
-                const banner = document.getElementById('backNavLockoutBanner');
-                if (banner) {
-                    banner.style.boxShadow = '0 0 35px #ef4444';
-                    banner.style.borderColor = '#ef4444';
-                    banner.style.background = 'rgba(239, 68, 68, 0.35)';
-                    setTimeout(() => {
-                        banner.style.boxShadow = 'none';
-                        banner.style.borderColor = 'rgba(239, 68, 68, 0.35)';
-                        banner.style.background = 'rgba(220, 38, 38, 0.12)';
-                    }, 900);
-                }
-            }
-
-            window.addEventListener('popstate', function(event) {
-                try {
-                    window.history.pushState(null, document.title, window.location.href);
-                } catch(e) {}
-                triggerBackBlockedAlert();
+            window.addEventListener('popstate', function() {
+                try { window.history.pushState(null, document.title, window.location.href); } catch(e) {}
             });
-
-            window.addEventListener('keydown', function(e) {
-                if (e.altKey && (e.key === 'ArrowLeft' || e.keyCode === 37)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    triggerBackBlockedAlert();
-                    return false;
-                }
-                if (e.metaKey && (e.key === 'ArrowLeft' || e.key === '[' || e.keyCode === 37 || e.keyCode === 219)) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    triggerBackBlockedAlert();
-                    return false;
-                }
-                if (e.key === 'Backspace' || e.keyCode === 8) {
-                    const tag = (e.target.tagName || '').toLowerCase();
-                    if (tag !== 'input' && tag !== 'textarea') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        triggerBackBlockedAlert();
-                        return false;
-                    }
-                }
-            }, true);
-
-            window.addEventListener('pageshow', function(event) {
-                if (event.persisted) {
-                    window.location.reload();
-                }
-            });
-
-            try {
-                sessionStorage.clear();
-            } catch(e) {}
         })();
 
-        // 2. Real-Time Quarantine Countdown, Progress Circle & Auto-Release
+        // 2. Countdown Timer
         (function() {
             const serverExpiresAt = parseInt("{{ lockout_expires_at|default:0 }}", 10);
             const storageKey = 'cyberaccess_lockout_' + encodeURIComponent("{{ subject|default:'client' }}");
@@ -1087,68 +278,39 @@
                 return Math.max(0, expiresAt - currentSec);
             }
 
-            let remaining = getRemainingSeconds();
-            const totalDuration = Math.max(remaining, initialDuration, 1);
             const formattedEl = document.getElementById('lockoutTimerFormatted');
             const secondsEl = document.getElementById('lockoutTimerSeconds');
-            const progressCircle = document.getElementById('timerProgressCircle');
-            const statusIndicator = document.getElementById('lockdownStatusIndicator');
-            const circleCircumference = 440; // 2 * pi * 70
 
             function updateDisplay() {
-                remaining = getRemainingSeconds();
-                const m = Math.floor(remaining / 60);
-                const s = remaining % 60;
+                const rem = getRemainingSeconds();
+                const m = Math.floor(rem / 60);
+                const s = rem % 60;
                 if (formattedEl) {
-                    formattedEl.textContent = String(m).padStart(2, '0') + ' : ' + String(s).padStart(2, '0');
+                    formattedEl.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
                 }
                 if (secondsEl) {
-                    secondsEl.textContent = '(' + remaining + ' seconds remaining)';
+                    secondsEl.textContent = rem + ' seconds remaining';
                 }
-                if (progressCircle) {
-                    const frac = Math.max(0, Math.min(1, remaining / totalDuration));
-                    const offset = circleCircumference * (1 - frac);
-                    progressCircle.style.strokeDashoffset = String(offset);
+                if (rem <= 0) {
+                    clearInterval(interval);
+                    try { localStorage.removeItem(storageKey); } catch(e) {}
+                    if (formattedEl) {
+                        formattedEl.textContent = '00:00';
+                        formattedEl.style.color = '#10b981';
+                    }
+                    if (secondsEl) {
+                        secondsEl.textContent = 'Access restored. Refreshing...';
+                        secondsEl.style.color = '#10b981';
+                    }
+                    setTimeout(() => { window.location.href = '/'; }, 1200);
                 }
             }
 
             updateDisplay();
-
-            const interval = setInterval(() => {
-                remaining = getRemainingSeconds();
-                if (remaining <= 0) {
-                    clearInterval(interval);
-                    try {
-                        localStorage.removeItem(storageKey);
-                    } catch(e) {}
-                    if (formattedEl) {
-                        formattedEl.textContent = '00 : 00';
-                        formattedEl.style.color = '#10b981';
-                        formattedEl.style.textShadow = '0 0 30px rgba(16, 185, 129, 0.7)';
-                    }
-                    if (progressCircle) {
-                        progressCircle.style.stroke = '#10b981';
-                        progressCircle.style.strokeDashoffset = '0';
-                    }
-                    if (secondsEl) {
-                        secondsEl.innerHTML = '<span style="color: #10b981; font-weight: bold;"><i class="fa-solid fa-circle-check"></i> Cooldown complete. Re-validating identity clearance...</span>';
-                    }
-                    if (statusIndicator) {
-                        statusIndicator.style.background = 'rgba(16, 185, 129, 0.2)';
-                        statusIndicator.style.borderColor = 'rgba(16, 185, 129, 0.5)';
-                        statusIndicator.style.color = '#10b981';
-                        statusIndicator.innerHTML = '<i class="fa-solid fa-lock-open"></i> Clearance Restored';
-                    }
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1600);
-                } else {
-                    updateDisplay();
-                }
-            }, 1000);
+            const interval = setInterval(updateDisplay, 1000);
         })();
 
-        // 3. Hackathon Demo Instant Quarantine Bypass
+        // 3. One-Click Fast Release
         function hackathonBypass() {
             try {
                 for (let i = localStorage.length - 1; i >= 0; i--) {
