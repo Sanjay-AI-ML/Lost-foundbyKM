@@ -307,11 +307,6 @@
     100% { transform: scale(1); }
 }
 
-/* Ensure hidden attribute always works */
-[hidden] {
-    display: none !important;
-}
-
 /* Vulnerability Warning - Shows when defense is OFF */
 .vulnerability-warning {
     display: flex;
@@ -322,6 +317,11 @@
     border-radius: 16px;
     box-shadow: 0 0 20px rgba(244, 63, 94, 0.6), 0 0 40px rgba(251, 113, 133, 0.3);
     animation: vulnerabilityPulse 1s ease-in-out infinite;
+}
+
+/* Hide vulnerability warning when defense is ON */
+.vulnerability-warning.vulnerability-hidden {
+    display: none;
 }
 
 .warning-text {

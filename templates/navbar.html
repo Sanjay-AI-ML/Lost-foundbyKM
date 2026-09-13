@@ -18,7 +18,7 @@
                     <span class="hackathon-label">🛡️ HACKATHON</span>
                     <span class="hackathon-status" id="hackathonStatus">ON</span>
                 </button>
-                <div class="vulnerability-warning" id="vulnerabilityWarning" hidden>
+                <div class="vulnerability-warning vulnerability-hidden" id="vulnerabilityWarning">
                     <span class="warning-text">⚠️ VULNERABLE</span>
                 </div>
             </div>
@@ -89,11 +89,11 @@
             if (data.defense_enabled) {
                 button?.classList.remove('hackathon-off');
                 statusEl.textContent = 'ON';
-                warningEl.hidden = true;
+                warningEl.classList.add('vulnerability-hidden');
             } else {
                 button?.classList.add('hackathon-off');
                 statusEl.textContent = 'OFF';
-                warningEl.hidden = false;
+                warningEl.classList.remove('vulnerability-hidden');
             }
         });
     });
@@ -115,17 +115,17 @@
 
             if (data.success) {
                 const button = this;
-                const statusEl = button.querySelector('#hackathonStatus');
+                const statusEl = document.getElementById('hackathonStatus');
                 const warningEl = document.getElementById('vulnerabilityWarning');
 
                 if (data.defense_enabled) {
                     button.classList.remove('hackathon-off');
                     statusEl.textContent = 'ON';
-                    warningEl.hidden = true;
+                    warningEl.classList.add('vulnerability-hidden');
                 } else {
                     button.classList.add('hackathon-off');
                     statusEl.textContent = 'OFF';
-                    warningEl.hidden = false;
+                    warningEl.classList.remove('vulnerability-hidden');
                 }
 
                 button.style.animation = 'pulse 0.6s ease-out';
