@@ -404,7 +404,62 @@ class CyberAccessSecurityMiddleware:
                     }
                     return render_cyberaccess_blocked(request, context, status=403)
 
-                # 2. Object Access Check (for non-admin object endpoints)
+                # 2. Administrative Portal Access Gatekeeper:
+                # Direct probing or access to /admin or /admin/* by unauthenticated or non-staff visitors
+                # is immediately intercepted and quarantined. Never expose Django administration!
+                if is_admin:
+                    is_authenticated = getattr(request.user, 'is_authenticated', False)
+                    is_staff = getattr(request.user, 'is_staff', False)
+                    if not (is_authenticated and is_staff):
+                        client_ip = get_client_ip(request)
+                        now_ts = time.time()
+                        client = CyberAccessClient.get_instance()
+
+                        allowed, action, details = enforce_bola(
+                            request=request,
+                            resource_id="privileged_admin_portal",
+                            is_authorized=False,
+                            resource_name="admin_login_probe",
+                            http_verb=request.method,
+                            subject=client_ip,
+                        )
+
+                        rem_sec = details.get("lockout_remaining_s") or 120
+                        expires_at = details.get("lockout_expires_at") or int(now_ts + rem_sec)
+                        rem_sec = max(0, int(expires_at - now_ts))
+                        strike_count = details.get("strike_count") or 1
+
+                        get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
+
+                        client.log_timer_event(
+                            subject=client_ip,
+                            remaining_seconds=rem_sec,
+                            expires_at=expires_at,
+                            strike_count=strike_count,
+                            reason="Direct access to privileged administration portal intercepted"
+                        )
+
+                        context = {
+                            "subject": client_ip,
+                            "decision": "block",
+                            "score": details.get("score", 95.0),
+                            "category": details.get("category", "Attack"),
+                            "signals": details.get("signals") or ["unauthorized_admin_access_attempt", "blocked_due_to_high_risk", f"strike_{strike_count}_soft_lockout_2m"],
+                            "explanations": details.get("explanations") or [
+                                "Unauthorized direct administrative portal reconnaissance intercepted.",
+                                "Direct access to privileged administration endpoints is strictly restricted to authenticated staff.",
+                                f"Strike {strike_count}/3: Active quarantine cooldown penalty enforced across all application endpoints."
+                            ],
+                            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                            "contact_email": "security@company.com",
+                            "lockout_remaining_seconds": rem_sec,
+                            "lockout_expires_at": expires_at,
+                            "strike_count": strike_count,
+                            "lockout_type": f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m",
+                        }
+                        return render_cyberaccess_blocked(request, context, status=403)
+
+                # 3. Object Access Check (for non-admin object endpoints)
                 if not is_admin and self._OBJECT_PATH_PATTERN.search(path):
                     m = self._OBJECT_PATH_PATTERN.search(path)
                     if m:
