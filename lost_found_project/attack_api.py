@@ -160,15 +160,21 @@ def reset_demo(request):
         except ImportError:
             pass  # If import fails, just skip quarantine clearing
 
-        return JsonResponse({
+        response = JsonResponse({
             'success': True,
             'message': f'Reset complete: {deleted_count} audit logs, {quarantine_count} quarantine timers cleared',
             'audit_logs_cleared': deleted_count,
             'quarantine_timers_cleared': quarantine_count,
         })
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'POST'
+        return response
 
     except Exception as e:
-        return JsonResponse({
+        response = JsonResponse({
             'success': False,
             'message': str(e)
         }, status=500)
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'POST'
+        return response
