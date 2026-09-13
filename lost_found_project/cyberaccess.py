@@ -86,9 +86,9 @@ class CyberAccessClient:
                 return {
                     "decision": "allow",
                     "score": 0.0,
-                    "category": "Demo_Mode_Unprotected",
-                    "signals": ["defense_system_disabled"],
-                    "explanations": ["BOLA defense system is DISABLED - system is VULNERABLE"],
+                    "category": "VULNERABLE_MODE_ACTIVE",
+                    "signals": ["defense_system_disabled", "system_unprotected"],
+                    "explanations": ["🚨 CRITICAL: BOLA DEFENSE SYSTEM IS DISABLED - SYSTEM IS COMPLETELY VULNERABLE 🚨"],
                 }
         except (ImportError, AttributeError):
             pass  # Defense toggle not available, continue with normal checks

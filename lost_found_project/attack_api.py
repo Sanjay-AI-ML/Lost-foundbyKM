@@ -180,8 +180,47 @@ def reset_demo(request):
         return response
 
 
-# Global toggle state for BOLA defense system
-_BOLA_DEFENSE_ENABLED = True
+def _get_defense_state():
+    """Get BOLA defense state from cache or database"""
+    from django.core.cache import cache
+    state = cache.get('bola_defense_enabled')
+    if state is None:
+        state = True
+        cache.set('bola_defense_enabled', state, timeout=None)
+    return state
+
+
+def _set_defense_state(enabled):
+    """Set BOLA defense state in cache"""
+    from django.core.cache import cache
+    cache.set('bola_defense_enabled', enabled, timeout=None)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_defense_status(request):
+    """
+    Get current BOLA defense system status (ON/OFF)
+    Used to load state on page refresh
+    """
+    try:
+        defense_enabled = is_bola_defense_enabled()
+        response = JsonResponse({
+            'success': True,
+            'defense_enabled': defense_enabled,
+            'status': 'PROTECTED' if defense_enabled else 'VULNERABLE'
+        })
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'GET'
+        return response
+    except Exception as e:
+        response = JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=500)
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'GET'
+        return response
 
 
 @csrf_exempt
@@ -190,16 +229,18 @@ def toggle_defense_system(request):
     """
     Toggle BOLA defense system on/off for hackathon demo
     Shows what happens when defenses are active vs disabled
+    Persists state in cache
     """
-    global _BOLA_DEFENSE_ENABLED
     try:
-        _BOLA_DEFENSE_ENABLED = not _BOLA_DEFENSE_ENABLED
+        current_state = _get_defense_state()
+        new_state = not current_state
+        _set_defense_state(new_state)
 
         response = JsonResponse({
             'success': True,
-            'defense_enabled': _BOLA_DEFENSE_ENABLED,
-            'message': f'BOLA Defense System is now {"ON" if _BOLA_DEFENSE_ENABLED else "OFF"}',
-            'status': 'PROTECTED' if _BOLA_DEFENSE_ENABLED else 'VULNERABLE'
+            'defense_enabled': new_state,
+            'message': f'BOLA Defense System is now {"ON" if new_state else "OFF"}',
+            'status': 'PROTECTED' if new_state else 'VULNERABLE'
         })
         response['Access-Control-Allow-Origin'] = '*'
         response['Access-Control-Allow-Methods'] = 'POST'
@@ -215,5 +256,5 @@ def toggle_defense_system(request):
 
 
 def is_bola_defense_enabled():
-    """Check if BOLA defense system is enabled"""
-    return _BOLA_DEFENSE_ENABLED
+    """Check if BOLA defense system is enabled - persists across requests"""
+    return _get_defense_state()

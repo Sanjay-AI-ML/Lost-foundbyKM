@@ -13,10 +13,15 @@
             </a>
 
             <!-- Hackathon Defense Toggle -->
-            <button class="hackathon-toggle-btn" id="hackathonToggleBtn" type="button" title="Toggle BOLA Defense System">
-                <span class="hackathon-label">🛡️ HACKATHON</span>
-                <span class="hackathon-status" id="hackathonStatus">ON</span>
-            </button>
+            <div class="hackathon-toggle-wrapper">
+                <button class="hackathon-toggle-btn" id="hackathonToggleBtn" type="button" title="Toggle BOLA Defense System">
+                    <span class="hackathon-label">🛡️ HACKATHON</span>
+                    <span class="hackathon-status" id="hackathonStatus">ON</span>
+                </button>
+                <div class="vulnerability-warning" id="vulnerabilityWarning" hidden>
+                    <span class="warning-text">⚠️ VULNERABLE</span>
+                </div>
+            </div>
         </div>
 
         <!-- Right Side Nav Actions (Minimal & Clean) -->
@@ -65,6 +70,34 @@
 </header>
 
 <script>
+    // Initialize defense state on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusEl = document.getElementById('hackathonStatus');
+        const button = document.getElementById('hackathonToggleBtn');
+        const warningEl = document.getElementById('vulnerabilityWarning');
+
+        // Try to get initial state from server
+        fetch('/toggle-defense-status', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(r => r.json())
+        .catch(() => ({ defense_enabled: true }))
+        .then(data => {
+            if (data.defense_enabled) {
+                button?.classList.remove('hackathon-off');
+                statusEl.textContent = 'ON';
+                warningEl.hidden = true;
+            } else {
+                button?.classList.add('hackathon-off');
+                statusEl.textContent = 'OFF';
+                warningEl.hidden = false;
+            }
+        });
+    });
+
     // Hackathon Defense Toggle Handler
     document.getElementById('hackathonToggleBtn')?.addEventListener('click', async function(e) {
         e.preventDefault();
@@ -83,13 +116,16 @@
             if (data.success) {
                 const button = this;
                 const statusEl = button.querySelector('#hackathonStatus');
+                const warningEl = document.getElementById('vulnerabilityWarning');
 
                 if (data.defense_enabled) {
                     button.classList.remove('hackathon-off');
                     statusEl.textContent = 'ON';
+                    warningEl.hidden = true;
                 } else {
                     button.classList.add('hackathon-off');
                     statusEl.textContent = 'OFF';
+                    warningEl.hidden = false;
                 }
 
                 button.style.animation = 'pulse 0.6s ease-out';

@@ -28,6 +28,14 @@
     align-items: center;
     gap: 1.5rem;
     flex: 0 0 auto;
+    position: relative;
+}
+
+.hackathon-toggle-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 /* Brand Logo */
@@ -297,4 +305,36 @@
     0% { transform: scale(1); }
     50% { transform: scale(1.05); }
     100% { transform: scale(1); }
+}
+
+/* Vulnerability Warning - Shows when defense is OFF */
+.vulnerability-warning {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.8rem;
+    background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+    border: 2px solid #fb7185;
+    border-radius: 16px;
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.6), 0 0 40px rgba(251, 113, 133, 0.3);
+    animation: vulnerabilityPulse 1s ease-in-out infinite;
+}
+
+.warning-text {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes vulnerabilityPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(244, 63, 94, 0.6), 0 0 40px rgba(251, 113, 133, 0.3);
+        opacity: 1;
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(244, 63, 94, 0.9), 0 0 60px rgba(251, 113, 133, 0.5);
+        opacity: 0.9;
+    }
 }
