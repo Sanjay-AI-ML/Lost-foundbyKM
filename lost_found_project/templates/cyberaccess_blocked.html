@@ -422,37 +422,70 @@
                 <div class="meta-label">BOLA Defense Tier</div>
                 <div class="meta-value">
                     <i class="fa-solid fa-gavel" style="color: #f59e0b;"></i>
-                    <span>STRIKE {{ strike_count|default:1 }} OF 3 (Soft Lockout)</span>
+                    {% if strike_count == 3 %}
+                        <span>STRIKE 3 OF 3 (Permanent Ban Pending Approval)</span>
+                    {% else %}
+                        <span>STRIKE {{ strike_count|default:1 }} OF 3 (Temporary Lockout)</span>
+                    {% endif %}
                 </div>
             </div>
         </div>
 
-        <!-- Digital Cooldown Clock -->
+        <!-- Digital Cooldown Clock or Permanent Quarantine Status -->
         <div class="timer-stage">
-            <div class="timer-headline">
-                <span class="live-pulse-dot"></span>
-                <span>QUARANTINE COOLDOWN TIMER &bull; STRIKE {{ strike_count|default:1 }}/3</span>
-            </div>
+            {% if strike_count == 3 %}
+                <!-- Strike 3: Permanent Quarantine Status (No Timer) -->
+                <div class="timer-headline">
+                    <i class="fa-solid fa-lock" style="color: #ef4444;"></i>
+                    <span>PERMANENT QUARANTINE &bull; STRIKE 3/3</span>
+                </div>
 
-            <div class="timer-display">
-                <span id="lockoutTimerFormatted">02:00</span>
-            </div>
+                <div class="timer-display" style="color: #ef4444; font-size: 42px;">
+                    QUARANTINED
+                </div>
 
-            <div class="timer-sublabel" id="lockoutTimerSeconds">
-                ({{ lockout_remaining_seconds|default:120 }} seconds remaining)
-            </div>
+                <div class="timer-sublabel" style="color: #f87171; font-weight: bold;">
+                    Permanent ban pending administrative approval
+                </div>
 
-            <div class="timer-lockout-policy-text">
-                Unauthorized object access attempt intercepted. Navigation channels are quarantined to protect backend integrity.
-            </div>
+                <div class="timer-lockout-policy-text">
+                    Your workstation has reached Strike 3/3 and is now under permanent quarantine. No access to any application features. Administrative review required for reinstatement.
+                </div>
 
-            <div style="margin-top: 18px;">
-                <button type="button" onclick="hackathonBypass()" class="hackathon-btn" title="Instantly clear quarantine and return to home page during hackathon demonstrations">
-                    <i class="fa-solid fa-bolt" style="color: #fbbf24;"></i>
-                    <span>[FOR HACKATHON] Return Home</span>
-                    <i class="fa-solid fa-house" style="font-size: 11px; opacity: 0.9;"></i>
-                </button>
-            </div>
+                <div style="margin-top: 18px;">
+                    <button type="button" onclick="hackathonBypass()" class="hackathon-btn" title="Instantly clear quarantine and return to home page during hackathon demonstrations">
+                        <i class="fa-solid fa-bolt" style="color: #fbbf24;"></i>
+                        <span>[FOR HACKATHON] Return Home</span>
+                        <i class="fa-solid fa-house" style="font-size: 11px; opacity: 0.9;"></i>
+                    </button>
+                </div>
+            {% else %}
+                <!-- Strike 1 or 2: Temporary Cooldown Timer -->
+                <div class="timer-headline">
+                    <span class="live-pulse-dot"></span>
+                    <span>QUARANTINE COOLDOWN TIMER &bull; STRIKE {{ strike_count|default:1 }}/3</span>
+                </div>
+
+                <div class="timer-display">
+                    <span id="lockoutTimerFormatted">02:00</span>
+                </div>
+
+                <div class="timer-sublabel" id="lockoutTimerSeconds">
+                    ({{ lockout_remaining_seconds|default:120 }} seconds remaining)
+                </div>
+
+                <div class="timer-lockout-policy-text">
+                    Unauthorized object access attempt intercepted. Navigation channels are quarantined to protect backend integrity.
+                </div>
+
+                <div style="margin-top: 18px;">
+                    <button type="button" onclick="hackathonBypass()" class="hackathon-btn" title="Instantly clear quarantine and return to home page during hackathon demonstrations">
+                        <i class="fa-solid fa-bolt" style="color: #fbbf24;"></i>
+                        <span>[FOR HACKATHON] Return Home</span>
+                        <i class="fa-solid fa-house" style="font-size: 11px; opacity: 0.9;"></i>
+                    </button>
+                </div>
+            {% endif %}
         </div>
 
         <!-- Footer -->
@@ -507,8 +540,14 @@
             try { sessionStorage.clear(); } catch(e) {}
         })();
 
-        // 2. Real-Time Quarantine Countdown & Auto-Release
+        // 2. Real-Time Quarantine Countdown & Auto-Release (SKIP FOR STRIKE 3 - PERMANENT BAN)
         (function() {
+            // For Strike 3 (permanent ban), skip the countdown timer entirely
+            const strikeCount = parseInt("{{ strike_count|default:1 }}", 10);
+            if (strikeCount === 3) {
+                return; // No countdown for permanent quarantine
+            }
+
             const serverExpiresAt = parseInt("{{ lockout_expires_at|default:0 }}", 10);
             const storageKey = 'cyberaccess_lockout_' + encodeURIComponent("{{ subject|default:'client' }}");
             const nowSec = Math.floor(Date.now() / 1000);
