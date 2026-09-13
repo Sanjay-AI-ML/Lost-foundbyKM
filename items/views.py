@@ -187,19 +187,8 @@ def item_detail_view(request, pk):
         trial = int(details.get("trial_count", 1))
         max_trials = int(details.get("max_trials", 3))
 
-        # Only show security messages if defense is enabled
-        try:
-            from lost_found_project.attack_api import is_bola_defense_enabled
-            if is_bola_defense_enabled():
-                if trial >= 2:
-                    messages.warning(request, f"⚠️ Security Alert: Multiple non-existent object queries detected. (Trial {trial}/{max_trials} — Risk: {score}%)")
-                else:
-                    messages.error(request, f"🔍 Item #{pk} was not found. (Security Notice: Trial {trial}/{max_trials} — Risk: {score}%)")
-        except (ImportError, AttributeError):
-            # Fallback: show message if defense check fails
-            messages.error(request, f"🔍 Item #{pk} was not found. (Security Notice: Trial {trial}/{max_trials} — Risk: {score}%)")
-
-        return redirect('items:lost_items')
+        # Return 404 without security messages
+        return render(request, '404.html', status=404)
 
     # Valid item access telemetry
     enforce_bola(
