@@ -141,22 +141,40 @@ def trigger_attack(request):
 @require_http_methods(["POST"])
 def reset_demo(request):
     """
-    Reset everything: clear audit timeline, quarantine cache, and demo state
+    Reset EVERYTHING: audit logs, quarantine cache, defense state, system config
     """
     try:
-        # Delete all audit logs from database
+        # 1. Delete all audit logs from database
         deleted_count, _ = AuditLog.objects.all().delete()
 
-        # Clear in-memory quarantine cache (active timers)
+        # 2. Clear in-memory quarantine cache (active timers)
         quarantine_count = 0
         try:
             from lost_found_project.cyberaccess import _ACTIVE_QUARANTINES
             quarantine_count = len(_ACTIVE_QUARANTINES)
             _ACTIVE_QUARANTINES.clear()
         except ImportError:
-            pass  # If import fails, just skip quarantine clearing
+            pass
 
-        # Also notify FastAPI backend to reset its state
+        # 3. Reset BOLA defense state to ON (enabled)
+        _set_defense_state(True)
+
+        # 4. Clear system config table
+        from django.db import connection
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("DELETE FROM system_config")
+        except Exception:
+            pass
+
+        # 5. Clear Django cache completely
+        from django.core.cache import cache
+        try:
+            cache.clear()
+        except Exception:
+            pass
+
+        # 6. Notify FastAPI backend to reset its state
         try:
             import requests
             requests.post("http://127.0.0.1:8000/reset", timeout=2.0)
@@ -165,9 +183,12 @@ def reset_demo(request):
 
         response = JsonResponse({
             'success': True,
-            'message': f'Reset complete: {deleted_count} audit logs, {quarantine_count} quarantine timers cleared',
+            'message': f'✅ FULL RESET COMPLETE: {deleted_count} audit logs, {quarantine_count} quarantine timers cleared, defense enabled, system reset',
             'audit_logs_cleared': deleted_count,
             'quarantine_timers_cleared': quarantine_count,
+            'defense_state_reset': True,
+            'cache_cleared': True,
+            'system_config_cleared': True,
         })
         response['Access-Control-Allow-Origin'] = '*'
         response['Access-Control-Allow-Methods'] = 'POST'
