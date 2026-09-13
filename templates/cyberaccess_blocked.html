@@ -577,13 +577,8 @@
                 return Math.max(0, expiresAt - currentSec);
             }
 
-            let remaining = getRemainingSeconds();
-            const formattedEl = document.getElementById('lockoutTimerFormatted');
-            const secondsEl = document.getElementById('lockoutTimerSeconds');
-            const statusIndicator = document.getElementById('lockdownStatusIndicator');
-
             function updateDisplay() {
-                remaining = getRemainingSeconds();
+                const remaining = getRemainingSeconds();
                 const m = Math.floor(remaining / 60);
                 const s = remaining % 60;
                 if (formattedEl) {
@@ -592,12 +587,13 @@
                 if (secondsEl) {
                     secondsEl.textContent = '(' + remaining + ' seconds remaining)';
                 }
+                return remaining;
             }
 
             updateDisplay();
 
             const interval = setInterval(() => {
-                remaining = getRemainingSeconds();
+                const remaining = updateDisplay();
                 if (remaining <= 0) {
                     clearInterval(interval);
                     try { localStorage.removeItem(storageKey); } catch(e) {}
@@ -618,8 +614,6 @@
                     setTimeout(() => {
                         window.location.href = '/?clearance_restored=1';
                     }, 1800);
-                } else {
-                    updateDisplay();
                 }
             }, 1000);
         })();
