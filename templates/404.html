@@ -158,25 +158,43 @@
             The page, route, or object you were navigating to could not be found. It may have been moved, renamed, or never existed.
         </p>
 
-        {% if trial_count %}
-        <div style="margin: 20px 0; padding: 14px 18px; border-radius: 14px; text-align: left; background: {% if trial_count >= 2 %}rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fcd34d;{% else %}rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.35); color: #93c5fd;{% endif %}">
+        {% if risk_score %}
+        <div style="margin: 20px 0; padding: 14px 18px; border-radius: 14px; text-align: left;
+            {% if risk_score >= 70 %}
+                background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #fca5a5;
+            {% elif risk_score >= 40 %}
+                background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); color: #fcd34d;
+            {% else %}
+                background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.35); color: #93c5fd;
+            {% endif %}">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                 <span style="font-weight: 700; font-size: 0.95rem;">
-                    {% if trial_count >= 2 %}
-                    <i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px; color: #fbbf24;"></i> SECURITY WARNING &bull; TRIAL {{ trial_count }}/{{ max_trials|default:3 }}
+                    {% if risk_score >= 70 %}
+                    <i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px; color: #ef4444;"></i> SECURITY ALERT &bull; HIGH RISK
+                    {% elif risk_score >= 40 %}
+                    <i class="fa-solid fa-shield-halved" style="margin-right: 6px; color: #fbbf24;"></i> SECURITY NOTICE &bull; SUSPICIOUS
                     {% else %}
-                    <i class="fa-solid fa-shield-halved" style="margin-right: 6px; color: #60a5fa;"></i> ACCESS NOTICE &bull; TRIAL {{ trial_count }}/{{ max_trials|default:3 }}
+                    <i class="fa-solid fa-shield-halved" style="margin-right: 6px; color: #60a5fa;"></i> ACCESS NOTICE &bull; NORMAL
                     {% endif %}
                 </span>
-                <span style="font-size: 0.8rem; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: {% if trial_count >= 2 %}rgba(245, 158, 11, 0.25); color: #fef08a;{% else %}rgba(59, 130, 246, 0.25); color: #bfdbfe;{% endif %}">
-                    Risk: {{ risk_score|default:25 }}%
+                <span style="font-size: 0.8rem; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+                    {% if risk_score >= 70 %}
+                        background: rgba(239, 68, 68, 0.25); color: #fecaca;
+                    {% elif risk_score >= 40 %}
+                        background: rgba(245, 158, 11, 0.25); color: #fef08a;
+                    {% else %}
+                        background: rgba(59, 130, 246, 0.25); color: #bfdbfe;
+                    {% endif %}">
+                    Risk Score: {{ risk_score }}/100
                 </span>
             </div>
             <div style="font-size: 0.85rem; line-height: 1.4; opacity: 0.95;">
-                {% if trial_count >= 2 %}
-                <strong>Security Alert: Repeated unauthorized object access detected!</strong> Continued violations will quarantine your workstation with a full lockout cooldown.
+                {% if risk_score >= 70 %}
+                <strong>High Risk Detected:</strong> Anomalous behavioral patterns flagged. Reaching a Risk Score of 90+ will quarantine your workstation immediately.
+                {% elif risk_score >= 40 %}
+                <strong>Suspicious Pattern Detected:</strong> Access behavior has been logged and flagged quietly. Continued enumeration will escalate your risk score.
                 {% else %}
-                Object was not found or is restricted. Continued unauthorized object enumeration will escalate session risk.
+                Object was not found or is restricted. Continued unauthorized access attempts will escalate session risk.
                 {% endif %}
             </div>
         </div>

@@ -483,23 +483,27 @@ class CyberAccessSecurityMiddleware:
                             return render_cyberaccess_blocked(request, context, status=403)
                         else:
                             from django.contrib import messages
-                            trial = int(details.get("trial_count", 1))
-                            max_trials = int(details.get("max_trials", 3))
                             score = int(details.get("score", 25))
-                            if trial >= 2:
+                            if score >= 70:
                                 messages.warning(
                                     request,
-                                    f"⚠️ Security Alert: Repeated unauthorized administrative access detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                    f"⚠️ Security Alert: High-risk administrative portal probing detected! Reaching 90+ Risk will quarantine your workstation. (Risk Score: {score}/100 — High Risk)"
+                                )
+                            elif score >= 40:
+                                messages.warning(
+                                    request,
+                                    f"⚠️ Notice: Suspicious access pattern flagged quietly. (Risk Score: {score}/100 — Suspicious)"
                                 )
                             else:
                                 messages.error(
                                     request,
-                                    f"🛡️ Access Denied: Privileged administration portal is restricted to authenticated staff. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                    f"🛡️ Access Denied: Privileged administration portal is restricted to authenticated staff. (Risk Score: {score}/100 — Normal)"
                                 )
                             return HttpResponseRedirect('/?admin_denied=1')
 
                 # 3. Object-level checks are handled directly inside the respective views
-                # with graduated trial warnings (Attempt 1/3, Attempt 2/3) escalating to Strike 1 Block (Attempt 3).
+                # using graduated behavioral risk score tiers (Normal 0-39, Suspicious 40-69, High Risk 70-89)
+                # escalating to Strike (Attack 90-100) when threshold is crossed.
                 pass
 
         response = self.get_response(request)
@@ -575,18 +579,21 @@ class CyberAccessSecurityMiddleware:
                             return render_cyberaccess_blocked(request, context, status=403)
                         else:
                             from django.contrib import messages
-                            trial = int(details.get("trial_count", 1))
-                            max_trials = int(details.get("max_trials", 3))
                             score = int(details.get("score", 25))
-                            if trial >= 2:
+                            if score >= 70:
                                 messages.warning(
                                     request,
-                                    f"⚠️ Security Alert: Repeated failed administrator login detected! Continued attempts will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                    f"⚠️ Security Alert: High-risk failed administrative credential entry detected! Reaching 90+ Risk will quarantine your workstation. (Risk Score: {score}/100 — High Risk)"
+                                )
+                            elif score >= 40:
+                                messages.warning(
+                                    request,
+                                    f"⚠️ Notice: Suspicious access pattern flagged quietly. (Risk Score: {score}/100 — Suspicious)"
                                 )
                             else:
                                 messages.error(
                                     request,
-                                    f"🛡️ Access Denied: Invalid administrative credentials. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                    f"🛡️ Access Denied: Invalid administrative credentials. (Risk Score: {score}/100 — Normal)"
                                 )
 
                 if response.status_code == 404:
@@ -656,20 +663,25 @@ class CyberAccessSecurityMiddleware:
                             return render_cyberaccess_blocked(request, context, status=403)
                         else:
                             from django.contrib import messages
-                            trial = int(details.get("trial_count", 1))
-                            max_trials = int(details.get("max_trials", 3))
                             score = int(details.get("score", 25))
-                            if trial >= 2:
+                            category = details.get("category", "Normal")
+                            risk_tier = details.get("risk_tier", f"{category} ({score}/100)")
+                            if score >= 70:
                                 messages.warning(
                                     request,
-                                    f"⚠️ Security Alert: Repeated unauthorized object access detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                    f"⚠️ Security Alert: High-risk anomalous behavior detected! Reaching 90+ Risk will quarantine your workstation. (Risk Score: {score}/100 — High Risk)"
+                                )
+                            elif score >= 40:
+                                messages.warning(
+                                    request,
+                                    f"⚠️ Notice: Suspicious access pattern flagged quietly. (Risk Score: {score}/100 — Suspicious)"
                                 )
                             else:
                                 messages.error(
                                     request,
-                                    f"🛡️ Access Denied: Object #{obj_id} was not found. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                                    f"🛡️ Access Denied: Object #{obj_id} was not found. (Risk Score: {score}/100 — Normal)"
                                 )
-                            return render(request, "404.html", {"trial_count": trial, "max_trials": max_trials, "risk_score": score, "missing_pk": obj_id}, status=404)
+                            return render(request, "404.html", {"risk_score": score, "risk_category": category, "risk_tier": risk_tier, "missing_pk": obj_id}, status=404)
                     # For all non-quarantined 404s, render custom 404 template instead of technical debug screen
                     return render(request, "404.html", status=404)
         return response

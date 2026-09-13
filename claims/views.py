@@ -67,17 +67,27 @@ def claim_status_view(request, claim_id):
         if action == "block":
             raise CyberAccessBOLAException(details)
         score = int(details.get("score", 20))
-        trial = int(details.get("trial_count", 1))
-        max_trials = int(details.get("max_trials", 3))
+        category = details.get("category", "Normal")
 
         # Only show security messages if defense is enabled
         try:
             from lost_found_project.attack_api import is_bola_defense_enabled
             if is_bola_defense_enabled():
-                if trial >= 2:
-                    messages.warning(request, f"⚠️ Security Alert: Multiple non-existent claim probes detected. (Trial {trial}/{max_trials} — Risk: {score}%)")
+                if score >= 70:
+                    messages.warning(
+                        request,
+                        f"⚠️ Security Alert: High-risk anomalous behavior detected! Reaching 90+ Risk will quarantine your workstation. (Risk Score: {score}/100 — High Risk)"
+                    )
+                elif score >= 40:
+                    messages.warning(
+                        request,
+                        f"⚠️ Notice: Suspicious access pattern flagged quietly. (Risk Score: {score}/100 — Suspicious)"
+                    )
                 else:
-                    messages.error(request, f"Claim #{claim_id} was not found. (Security Notice: Trial {trial}/{max_trials} — Risk: {score}%)")
+                    messages.error(
+                        request,
+                        f"Claim #{claim_id} was not found. (Risk Score: {score}/100 — Normal)"
+                    )
         except (ImportError, AttributeError):
             # Fallback: show message if defense check fails
             messages.error(request, f"Claim #{claim_id} was not found.")
@@ -101,22 +111,26 @@ def claim_status_view(request, claim_id):
         if action == "block":
             raise CyberAccessBOLAException(details)
         score = int(details.get("score", 25))
-        trial = int(details.get("trial_count", 1))
-        max_trials = int(details.get("max_trials", 3))
+        category = details.get("category", "Normal")
 
         # Only show security messages if defense is enabled
         try:
             from lost_found_project.attack_api import is_bola_defense_enabled
             if is_bola_defense_enabled():
-                if trial >= 2:
+                if score >= 70:
                     messages.warning(
                         request,
-                        f"⚠️ Security Alert: Unauthorized claim inspection detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                        f"⚠️ Security Alert: High-risk anomalous behavior detected! Reaching 90+ Risk will quarantine your workstation. (Risk Score: {score}/100 — High Risk)"
+                    )
+                elif score >= 40:
+                    messages.warning(
+                        request,
+                        f"⚠️ Notice: Suspicious access pattern flagged quietly. (Risk Score: {score}/100 — Suspicious)"
                     )
                 else:
                     messages.error(
                         request,
-                        f"🛡️ Access Denied: You are not authorized to view this private claim. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                        f"🛡️ Access Denied: You are not authorized to view this private claim. (Risk Score: {score}/100 — Normal)"
                     )
         except (ImportError, AttributeError):
             # Fallback: show message if defense check fails
