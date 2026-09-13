@@ -446,7 +446,7 @@
             </div>
 
             <div class="timer-display">
-                <span id="lockoutTimerFormatted">02:00</span>
+                <span id="lockoutTimerFormatted">{% if strike_count == 2 %}30:00{% elif strike_count >= 3 %}PERMANENT{% else %}02:00{% endif %}</span>
             </div>
 
             <div class="timer-sublabel" id="lockoutTimerSeconds">

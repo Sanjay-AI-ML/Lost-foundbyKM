@@ -210,18 +210,19 @@ _ACTIVE_QUARANTINES: dict[str, dict] = {}
 def get_or_register_quarantine(subject: str, remaining_seconds: int = 120, expires_at: Optional[int] = None, strike_count: int = 1) -> dict:
     """Retrieves or registers an absolute quarantine expiration to prevent timer resets on refresh."""
     now = time.time()
+    target_exp = int(expires_at) if (expires_at and expires_at > now) else int(now + max(1, remaining_seconds))
+    rem = max(0, int(target_exp - now))
+
     existing = _ACTIVE_QUARANTINES.get(subject)
     if existing and existing["expires_at"] > now:
-        rem = max(0, int(existing["expires_at"] - now))
-        existing["remaining_seconds"] = rem
+        # If this is an escalation (higher strike count or longer lockout), upgrade the existing entry!
+        if strike_count > existing.get("strike_count", 1) or target_exp > existing.get("expires_at", 0):
+            existing["strike_count"] = max(strike_count, existing.get("strike_count", 1))
+            existing["expires_at"] = max(target_exp, existing.get("expires_at", 0))
+            existing["remaining_seconds"] = max(0, int(existing["expires_at"] - now))
+            return existing
+        existing["remaining_seconds"] = max(0, int(existing["expires_at"] - now))
         return existing
-
-    if expires_at and expires_at > now:
-        target_exp = int(expires_at)
-        rem = max(0, int(target_exp - now))
-    else:
-        rem = max(1, remaining_seconds)
-        target_exp = int(now + rem)
 
     entry = {
         "subject": subject,
@@ -368,27 +369,28 @@ class CyberAccessSecurityMiddleware:
                 now_ts = time.time()
                 local_q = _ACTIVE_QUARANTINES.get(subject) or _ACTIVE_QUARANTINES.get(client_ip)
 
-                if local_q and local_q["expires_at"] > now_ts:
-                    is_locked = True
-                    expires_at = local_q["expires_at"]
-                    rem_sec = max(0, int(expires_at - now_ts))
-                    strike_count = local_q.get("strike_count", 1)
-                else:
-                    lockout = client.get_lockout_status(subject)
-                    if not lockout.get("is_locked") and client_ip != subject:
-                        lockout = client.get_lockout_status(client_ip)
+                lockout = client.get_lockout_status(subject)
+                if not lockout.get("is_locked") and client_ip != subject:
+                    ip_lockout = client.get_lockout_status(client_ip)
+                    if ip_lockout.get("is_locked"):
+                        lockout = ip_lockout
 
-                    if lockout.get("is_locked"):
-                        is_locked = True
-                        expires_at = int(lockout.get("lockout_expires_at") or (now_ts + int(lockout.get("lockout_remaining_seconds", 120))))
-                        rem_sec = max(0, int(expires_at - now_ts))
-                        strike_count = lockout.get("strike_count", 1)
-                        get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
-                    else:
-                        is_locked = False
-                        expires_at = None
-                        rem_sec = 0
-                        strike_count = 0
+                if lockout.get("is_locked"):
+                    is_locked = True
+                    expires_at = int(lockout.get("lockout_expires_at") or (now_ts + int(lockout.get("lockout_remaining_seconds", 120))))
+                    rem_sec = max(0, int(expires_at - now_ts))
+                    strike_count = lockout.get("strike_count", 1)
+                    get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
+                    if client_ip != subject:
+                        get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
+                else:
+                    # Central engine indicates clear (expired or bypassed via admin/demo)
+                    _ACTIVE_QUARANTINES.pop(subject, None)
+                    _ACTIVE_QUARANTINES.pop(client_ip, None)
+                    is_locked = False
+                    expires_at = None
+                    rem_sec = 0
+                    strike_count = lockout.get("strike_count", 0)
 
                 if is_locked and rem_sec > 0:
                     # Save timer event to audit timeline so refresh and navigation are logged
@@ -427,6 +429,7 @@ class CyberAccessSecurityMiddleware:
                     is_staff = getattr(request.user, 'is_staff', False)
                     if not (is_authenticated and is_staff):
                         client_ip = get_client_ip(request)
+                        subject = get_client_subject(request)
                         now_ts = time.time()
                         client = CyberAccessClient.get_instance()
 
@@ -436,7 +439,7 @@ class CyberAccessSecurityMiddleware:
                             is_authorized=False,
                             resource_name="admin_login_probe",
                             http_verb=request.method,
-                            subject=client_ip,
+                            subject=subject,
                         )
 
                         rem_sec = details.get("lockout_remaining_s") or 120
@@ -444,10 +447,12 @@ class CyberAccessSecurityMiddleware:
                         rem_sec = max(0, int(expires_at - now_ts))
                         strike_count = details.get("strike_count") or 1
 
-                        get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
+                        get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
+                        if client_ip != subject:
+                            get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
 
                         client.log_timer_event(
-                            subject=client_ip,
+                            subject=subject,
                             remaining_seconds=rem_sec,
                             expires_at=expires_at,
                             strike_count=strike_count,
@@ -455,7 +460,7 @@ class CyberAccessSecurityMiddleware:
                         )
 
                         context = {
-                            "subject": client_ip,
+                            "subject": subject,
                             "decision": "block",
                             "score": details.get("score", 95.0),
                             "category": details.get("category", "Attack"),
@@ -497,6 +502,7 @@ class CyberAccessSecurityMiddleware:
                     )
                     if is_failed_admin_login:
                         attempted_user = request.POST.get('username', '').strip() or 'unknown'
+                        subject = attempted_user if (attempted_user and attempted_user != "unknown") else get_client_subject(request)
                         client_ip = get_client_ip(request)
                         now_ts = time.time()
                         client = CyberAccessClient.get_instance()
@@ -508,7 +514,7 @@ class CyberAccessSecurityMiddleware:
                             is_authorized=False,
                             resource_name="admin_login_probe",
                             http_verb=request.method,
-                            subject=client_ip,
+                            subject=subject,
                         )
 
                         rem_sec = details.get("lockout_remaining_s") or 120
@@ -516,12 +522,12 @@ class CyberAccessSecurityMiddleware:
                         rem_sec = max(0, int(expires_at - now_ts))
                         strike_count = details.get("strike_count") or 1
 
-                        get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
-                        if attempted_user and attempted_user != "unknown":
-                            get_or_register_quarantine(attempted_user, rem_sec, expires_at, strike_count)
+                        get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
+                        if client_ip != subject:
+                            get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
 
                         client.log_timer_event(
-                            subject=client_ip,
+                            subject=subject,
                             remaining_seconds=rem_sec,
                             expires_at=expires_at,
                             strike_count=strike_count,
@@ -529,7 +535,7 @@ class CyberAccessSecurityMiddleware:
                         )
 
                         context = {
-                            "subject": client_ip,
+                            "subject": subject,
                             "decision": "block",
                             "score": details.get("score", 95.0),
                             "category": details.get("category", "Attack"),
@@ -561,6 +567,7 @@ class CyberAccessSecurityMiddleware:
                             resource_type = "item"
                         resource_id = f"{resource_type}_{obj_id}"
 
+                        subject = get_client_subject(request)
                         client_ip = get_client_ip(request)
                         allowed, action, details = enforce_bola(
                             request=request,
@@ -568,7 +575,7 @@ class CyberAccessSecurityMiddleware:
                             is_authorized=False,
                             resource_name="resource_not_found",
                             http_verb=request.method,
-                            subject=client_ip,
+                            subject=subject,
                         )
 
                         if action == "block":
@@ -577,11 +584,13 @@ class CyberAccessSecurityMiddleware:
                             expires_at = details.get("lockout_expires_at") or int(now + rem_sec)
                             rem_sec = max(0, int(expires_at - now))
                             strike_count = details.get("strike_count") or 1
-                            get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
+                            get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
+                            if client_ip != subject:
+                                get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
 
                             client = CyberAccessClient.get_instance()
                             client.log_timer_event(
-                                subject=client_ip,
+                                subject=subject,
                                 remaining_seconds=rem_sec,
                                 expires_at=expires_at,
                                 strike_count=strike_count,
@@ -589,7 +598,7 @@ class CyberAccessSecurityMiddleware:
                             )
 
                             context = {
-                                "subject": client_ip,
+                                "subject": subject,
                                 "decision": "block",
                                 "score": details.get("score", 95.0),
                                 "category": details.get("category", "Attack"),
@@ -620,19 +629,27 @@ class CyberAccessSecurityMiddleware:
             client_ip = get_client_ip(request)
             now_ts = time.time()
 
-            # Monotonic quarantine calculation
+            raw_rem = int(exception.payload.get("lockout_remaining_s", 0) or 0)
+            if raw_rem <= 0:
+                raw_rem = 120
+            payload_expires_at = int(exception.payload.get("lockout_expires_at") or (now_ts + raw_rem))
+            payload_strike_count = int(exception.payload.get("strike_count") or 1)
+
+            # Monotonic quarantine calculation: preserve active countdown unless this is a strike escalation
             local_q = _ACTIVE_QUARANTINES.get(subject) or _ACTIVE_QUARANTINES.get(client_ip)
-            if local_q and local_q["expires_at"] > now_ts:
+            if (
+                local_q
+                and local_q["expires_at"] > now_ts
+                and local_q.get("strike_count", 1) >= payload_strike_count
+                and local_q["expires_at"] >= payload_expires_at
+            ):
                 expires_at = local_q["expires_at"]
                 rem_sec = max(0, int(expires_at - now_ts))
                 strike_count = local_q.get("strike_count", 1)
             else:
-                raw_rem = int(exception.payload.get("lockout_remaining_s", 0) or 0)
-                if raw_rem <= 0:
-                    raw_rem = 120
-                expires_at = int(exception.payload.get("lockout_expires_at") or (now_ts + raw_rem))
+                expires_at = payload_expires_at
                 rem_sec = max(0, int(expires_at - now_ts))
-                strike_count = int(exception.payload.get("strike_count") or 1)
+                strike_count = payload_strike_count
                 get_or_register_quarantine(subject, rem_sec, expires_at, strike_count)
                 if client_ip != subject:
                     get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
