@@ -459,57 +459,9 @@ class CyberAccessSecurityMiddleware:
                         }
                         return render_cyberaccess_blocked(request, context, status=403)
 
-                # 3. Object Access Check (for non-admin object endpoints)
-                if not is_admin and self._OBJECT_PATH_PATTERN.search(path):
-                    m = self._OBJECT_PATH_PATTERN.search(path)
-                    if m:
-                        obj_id = m.group(1)
-                        if "record" in path:
-                            resource_type = "record"
-                        elif "claim" in path:
-                            resource_type = "claim"
-                        else:
-                            resource_type = "item"
-                        resource_id = f"{resource_type}_{obj_id}"
-
-                        # EARLY CHECK: Is this subject high-risk? Block before page render
-                        allowed, action, details = enforce_bola(
-                            request=request,
-                            resource_id=resource_id,
-                            is_authorized=False,
-                            resource_name="resource_access_check",
-                            http_verb=request.method,
-                            subject=client_ip,
-                        )
-
-                        # If blocked at entry point, show blocked page BEFORE rendering website
-                        if action == "block":
-                            rem_sec = details.get("lockout_remaining_s", 120) or 120
-                            expires_at = details.get("lockout_expires_at") or int(now_ts + rem_sec)
-                            rem_sec = max(0, int(expires_at - now_ts))
-                            get_or_register_quarantine(client_ip, rem_sec, expires_at, 1)
-                            client.log_timer_event(
-                                subject=client_ip,
-                                remaining_seconds=rem_sec,
-                                expires_at=expires_at,
-                                strike_count=1,
-                                reason="Early object check blocked access"
-                            )
-                            context = {
-                                "subject": client_ip,
-                                "decision": "block",
-                                "score": details.get("score", 100.0),
-                                "category": details.get("category", "Attack"),
-                                "signals": details.get("signals", ["automated_enumeration"]),
-                                "explanations": details.get("explanations", ["Abnormal access pattern detected. Access quarantined."]),
-                                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-                                "contact_email": "security@company.com",
-                                "lockout_remaining_seconds": rem_sec,
-                                "lockout_expires_at": expires_at,
-                                "strike_count": 1,
-                                "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
-                            }
-                            return render_cyberaccess_blocked(request, context, status=403)
+                # 3. Object-level checks are handled directly inside the respective views
+                # with graduated trial warnings (Attempt 1/3, Attempt 2/3) escalating to Strike 1 Block (Attempt 3).
+                pass
 
         response = self.get_response(request)
         if CYBERACCESS_ENABLED:
@@ -604,43 +556,49 @@ class CyberAccessSecurityMiddleware:
                             subject=client_ip,
                         )
 
-                        now = time.time()
-                        q_entry = get_or_register_quarantine(client_ip, 120)
-                        rem_sec = q_entry["remaining_seconds"]
-                        expires_at = q_entry["expires_at"]
+                        if action == "block":
+                            now = time.time()
+                            rem_sec = details.get("lockout_remaining_s") or 120
+                            expires_at = details.get("lockout_expires_at") or int(now + rem_sec)
+                            rem_sec = max(0, int(expires_at - now))
+                            strike_count = details.get("strike_count") or 1
+                            get_or_register_quarantine(client_ip, rem_sec, expires_at, strike_count)
 
-                        client = CyberAccessClient.get_instance()
-                        client.log_timer_event(
-                            subject=client_ip,
-                            remaining_seconds=rem_sec,
-                            expires_at=expires_at,
-                            strike_count=1,
-                            reason="Object enumeration probe on non-existent record"
-                        )
+                            client = CyberAccessClient.get_instance()
+                            client.log_timer_event(
+                                subject=client_ip,
+                                remaining_seconds=rem_sec,
+                                expires_at=expires_at,
+                                strike_count=strike_count,
+                                reason="Object enumeration attack threshold exceeded"
+                            )
 
-                        context = {
-                            "subject": client_ip,
-                            "decision": "block",
-                            "score": details.get("score", 75.0),
-                            "category": details.get("category", "Suspicious Activity"),
-                            "signals": details.get("signals", ["object_enumeration", "resource_discovery"]),
-                            "explanations": details.get("explanations", [
-                                "Access to this resource is restricted.",
-                                "Object enumeration attempts are monitored and logged."
-                            ]),
-                            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
-                            "contact_email": "security@company.com",
-                            "strike_count": 1,
-                            "is_locked": True,
-                            "lockout_remaining_seconds": rem_sec,
-                            "lockout_expires_at": expires_at,
-                            "lockout_type": "soft_lockout_2m",
-                        }
-                        return render_cyberaccess_blocked(request, context, status=403)
+                            context = {
+                                "subject": client_ip,
+                                "decision": "block",
+                                "score": details.get("score", 95.0),
+                                "category": details.get("category", "Attack"),
+                                "signals": details.get("signals") or ["object_enumeration", f"strike_{strike_count}_soft_lockout_2m"],
+                                "explanations": details.get("explanations") or [
+                                    "Repeated object enumeration attack detected.",
+                                    f"Strike {strike_count}/3: Active quarantine cooldown penalty enforced."
+                                ],
+                                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime()),
+                                "contact_email": "security@company.com",
+                                "strike_count": strike_count,
+                                "lockout_remaining_seconds": rem_sec,
+                                "lockout_expires_at": expires_at,
+                                "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
+                            }
+                            return render_cyberaccess_blocked(request, context, status=403)
         return response
 
     def process_exception(self, request: HttpRequest, exception: Exception):
         if isinstance(exception, CyberAccessBOLAException):
+            # Only intercept with full quarantine takeover if decision is 'block'
+            action = exception.payload.get("decision") or exception.payload.get("action") or "block"
+            if action != "block":
+                return None
             subject = get_client_subject(request)
             client_ip = get_client_ip(request)
             now_ts = time.time()

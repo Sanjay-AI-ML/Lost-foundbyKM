@@ -181,9 +181,16 @@ def item_detail_view(request, pk):
             resource_name="items_fuzz_probe",
             http_verb=request.method,
         )
-        # CRITICAL: Never show raw 'Record was not found' or information disclosure messages.
-        # Always intercept with the professional CyberAccess Protected Resource shield.
-        raise CyberAccessBOLAException(details)
+        if action == "block":
+            raise CyberAccessBOLAException(details)
+        score = int(details.get("score", 20))
+        trial = int(details.get("trial_count", 1))
+        max_trials = int(details.get("max_trials", 3))
+        if trial >= 2:
+            messages.warning(request, f"⚠️ Security Alert: Multiple non-existent object queries detected. (Trial {trial}/{max_trials} — Risk: {score}%)")
+        else:
+            messages.error(request, f"🔍 Item #{pk} was not found. (Security Notice: Trial {trial}/{max_trials} — Risk: {score}%)")
+        return redirect('items:lost_items')
 
     # Valid item access telemetry
     enforce_bola(
@@ -268,7 +275,10 @@ def edit_item_view(request, pk):
             resource_name="items_edit_probe",
             http_verb=request.method,
         )
-        raise CyberAccessBOLAException(details)
+        if action == "block":
+            raise CyberAccessBOLAException(details)
+        messages.error(request, f"Item #{pk} was not found.")
+        return redirect('items:dashboard')
 
     is_authorized = bool(item.user == request.user or request.user.is_staff)
 
@@ -281,7 +291,22 @@ def edit_item_view(request, pk):
         http_verb="PUT" if request.method == "POST" else "GET",
     )
     if not allowed:
-        raise CyberAccessBOLAException(details)
+        if action == "block":
+            raise CyberAccessBOLAException(details)
+        score = int(details.get("score", 25))
+        trial = int(details.get("trial_count", 1))
+        max_trials = int(details.get("max_trials", 3))
+        if trial >= 2:
+            messages.warning(
+                request,
+                f"⚠️ Security Alert: Repeated unauthorized access detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+            )
+        else:
+            messages.error(
+                request,
+                f"🛡️ Access Denied: You do not have permission to edit '{item.title}'. (Trial {trial}/{max_trials} — Risk: {score}%)"
+            )
+        return redirect('items:item_detail', pk=item.pk)
 
     if request.method == 'POST':
         form = ItemForm(request.POST, request.FILES, instance=item)
@@ -308,7 +333,10 @@ def delete_item_view(request, pk):
             resource_name="items_delete_probe",
             http_verb=request.method,
         )
-        raise CyberAccessBOLAException(details)
+        if action == "block":
+            raise CyberAccessBOLAException(details)
+        messages.error(request, f"Item #{pk} was not found.")
+        return redirect('items:dashboard')
 
     is_authorized = bool(item.user == request.user or request.user.is_staff)
 
@@ -321,7 +349,22 @@ def delete_item_view(request, pk):
         http_verb="DELETE" if request.method == "POST" else "GET",
     )
     if not allowed:
-        raise CyberAccessBOLAException(details)
+        if action == "block":
+            raise CyberAccessBOLAException(details)
+        score = int(details.get("score", 30))
+        trial = int(details.get("trial_count", 1))
+        max_trials = int(details.get("max_trials", 3))
+        if trial >= 2:
+            messages.warning(
+                request,
+                f"⚠️ Security Alert: Unauthorized deletion attempt detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+            )
+        else:
+            messages.error(
+                request,
+                f"🛡️ Access Denied: You do not have permission to delete '{item.title}'. (Trial {trial}/{max_trials} — Risk: {score}%)"
+            )
+        return redirect('items:item_detail', pk=item.pk)
 
     if request.method == 'POST':
         title = item.title

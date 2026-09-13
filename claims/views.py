@@ -64,7 +64,16 @@ def claim_status_view(request, claim_id):
             resource_name="claims_fuzz_probe",
             http_verb=request.method,
         )
-        raise CyberAccessBOLAException(details)
+        if action == "block":
+            raise CyberAccessBOLAException(details)
+        score = int(details.get("score", 20))
+        trial = int(details.get("trial_count", 1))
+        max_trials = int(details.get("max_trials", 3))
+        if trial >= 2:
+            messages.warning(request, f"⚠️ Security Alert: Multiple non-existent claim probes detected. (Trial {trial}/{max_trials} — Risk: {score}%)")
+        else:
+            messages.error(request, f"Claim #{claim_id} was not found. (Security Notice: Trial {trial}/{max_trials} — Risk: {score}%)")
+        return redirect('items:dashboard')
 
     is_claimant = (request.user == claim.claimant)
     is_item_owner = (request.user == claim.item.user)
@@ -80,7 +89,22 @@ def claim_status_view(request, claim_id):
     )
 
     if not allowed:
-        raise CyberAccessBOLAException(details)
+        if action == "block":
+            raise CyberAccessBOLAException(details)
+        score = int(details.get("score", 25))
+        trial = int(details.get("trial_count", 1))
+        max_trials = int(details.get("max_trials", 3))
+        if trial >= 2:
+            messages.warning(
+                request,
+                f"⚠️ Security Alert: Unauthorized claim inspection detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+            )
+        else:
+            messages.error(
+                request,
+                f"🛡️ Access Denied: You are not authorized to view this private claim. (Trial {trial}/{max_trials} — Risk: {score}%)"
+            )
+        return redirect('items:dashboard')
 
     review_form = None
     if is_item_owner or request.user.is_staff:
