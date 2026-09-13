@@ -156,6 +156,13 @@ def reset_demo(request):
         except ImportError:
             pass  # If import fails, just skip quarantine clearing
 
+        # Also notify FastAPI backend to reset its state
+        try:
+            import requests
+            requests.post("http://127.0.0.1:8000/reset", timeout=2.0)
+        except Exception:
+            pass
+
         response = JsonResponse({
             'success': True,
             'message': f'Reset complete: {deleted_count} audit logs, {quarantine_count} quarantine timers cleared',
@@ -176,20 +183,72 @@ def reset_demo(request):
         return response
 
 
+def _init_system_config_table():
+    from django.db import connection
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS system_config (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL,
+                    updated_at REAL NOT NULL
+                )
+            """)
+    except Exception:
+        pass
+
+
 def _get_defense_state():
     """Get BOLA defense state from cache or database"""
     from django.core.cache import cache
-    state = cache.get('bola_defense_enabled')
-    if state is None:
-        state = True
-        cache.set('bola_defense_enabled', state, timeout=None)
-    return state
+    from django.db import connection
+
+    cached = cache.get('bola_defense_enabled')
+    if cached is not None:
+        return bool(cached)
+
+    try:
+        _init_system_config_table()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT value FROM system_config WHERE key = 'defense_enabled'")
+            row = cursor.fetchone()
+            if row:
+                val = str(row[0]).lower() not in ('false', '0', 'off', 'disabled')
+                cache.set('bola_defense_enabled', val, timeout=None)
+                return val
+    except Exception:
+        pass
+
+    cache.set('bola_defense_enabled', True, timeout=None)
+    return True
 
 
 def _set_defense_state(enabled):
-    """Set BOLA defense state in cache"""
+    """Set BOLA defense state in cache, database, and FastAPI backend"""
     from django.core.cache import cache
-    cache.set('bola_defense_enabled', enabled, timeout=None)
+    from django.db import connection
+    import time
+    import requests
+
+    cache.set('bola_defense_enabled', bool(enabled), timeout=None)
+    try:
+        _init_system_config_table()
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO system_config (key, value, updated_at) VALUES ('defense_enabled', %s, %s)
+                ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+            """, ['true' if enabled else 'false', time.time()])
+    except Exception:
+        pass
+
+    try:
+        requests.post(
+            "http://127.0.0.1:8000/toggle-defense",
+            json={"enabled": bool(enabled)},
+            timeout=1.0
+        )
+    except Exception:
+        pass
 
 
 @csrf_exempt
@@ -225,7 +284,7 @@ def toggle_defense_system(request):
     """
     Toggle BOLA defense system on/off for hackathon demo
     Shows what happens when defenses are active vs disabled
-    Persists state in cache
+    Persists state in cache and database
     """
     try:
         current_state = _get_defense_state()

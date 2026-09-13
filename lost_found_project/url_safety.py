@@ -83,8 +83,11 @@ def is_internal_url(url: str) -> bool:
     if not url:
         return False
 
+    if url.startswith("/"):
+        return True
+
     # Remove protocol if present
-    test_url = url.lstrip("/")
+    test_url = re.sub(r"^https?://", "", url.strip(), flags=re.IGNORECASE)
 
     for pattern in ALLOWED_INTERNAL_PATTERNS:
         if re.match(pattern, test_url, re.IGNORECASE):
