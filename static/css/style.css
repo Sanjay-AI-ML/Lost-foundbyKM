@@ -688,9 +688,23 @@ input[type="file"].form-control-file:hover {
     animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.toast-warning {
+    border-left-color: var(--warning);
+    background: rgba(245, 158, 11, 0.15) !important;
+    border: 2px solid var(--warning) !important;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.4), 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1), warningPulse 2s ease-in-out infinite !important;
+    padding: 1.25rem 1.5rem !important;
+}
+
 @keyframes toastSlideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes warningPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4), 0 10px 30px rgba(0, 0, 0, 0.5); }
+    50% { box-shadow: 0 0 35px rgba(245, 158, 11, 0.7), 0 10px 40px rgba(0, 0, 0, 0.6); }
 }
 
 .toast-success { border-left-color: var(--success); }
@@ -699,7 +713,6 @@ input[type="file"].form-control-file:hover {
 .toast-error, .toast-danger { border-left-color: var(--danger); }
 .toast-error .toast-icon, .toast-danger .toast-icon { color: var(--danger-text); }
 
-.toast-warning { border-left-color: var(--warning); }
 .toast-warning .toast-icon { color: var(--warning-text); }
 
 .toast-info { border-left-color: var(--info); }
