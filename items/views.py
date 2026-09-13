@@ -289,25 +289,26 @@ def edit_item_view(request, pk):
         http_verb="PUT" if request.method == "POST" else "GET",
     )
     if not allowed:
-        if action == "block":
+        score = int(details.get("score", 0))
+
+        # Score-based escalation: 90+ triggers immediate strike
+        if score >= 90:
+            details["decision"] = "block"
             raise CyberAccessBOLAException(details)
-        score = int(details.get("score", 25))
-        trial = int(details.get("trial_count", 1))
-        max_trials = int(details.get("max_trials", 3))
 
         # Only show security messages if defense is enabled
         try:
             from lost_found_project.attack_api import is_bola_defense_enabled
             if is_bola_defense_enabled():
-                if trial >= 2:
+                if score >= 70:
                     messages.warning(
                         request,
-                        f"⚠️ Security Alert: Repeated unauthorized access detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                        f"⚠️ CRITICAL: Repeated unauthorized access detected! Further violations will quarantine your workstation. (Risk Score: {score}/100 — HIGH RISK)"
                     )
                 else:
                     messages.error(
                         request,
-                        f"🛡️ Access Denied: You do not have permission to edit '{item.title}'. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                        f"🛡️ Access Denied: You do not have permission to edit '{item.title}'. (Risk Score: {score}/100)"
                     )
         except (ImportError, AttributeError):
             # Fallback: show message if defense check fails
@@ -356,25 +357,26 @@ def delete_item_view(request, pk):
         http_verb="DELETE" if request.method == "POST" else "GET",
     )
     if not allowed:
-        if action == "block":
+        score = int(details.get("score", 0))
+
+        # Score-based escalation: 90+ triggers immediate strike
+        if score >= 90:
+            details["decision"] = "block"
             raise CyberAccessBOLAException(details)
-        score = int(details.get("score", 30))
-        trial = int(details.get("trial_count", 1))
-        max_trials = int(details.get("max_trials", 3))
 
         # Only show security messages if defense is enabled
         try:
             from lost_found_project.attack_api import is_bola_defense_enabled
             if is_bola_defense_enabled():
-                if trial >= 2:
+                if score >= 70:
                     messages.warning(
                         request,
-                        f"⚠️ Security Alert: Unauthorized deletion attempt detected! Continued violations will quarantine your workstation. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                        f"⚠️ CRITICAL: Unauthorized deletion attempt detected! Further violations will quarantine your workstation. (Risk Score: {score}/100 — HIGH RISK)"
                     )
                 else:
                     messages.error(
                         request,
-                        f"🛡️ Access Denied: You do not have permission to delete '{item.title}'. (Trial {trial}/{max_trials} — Risk: {score}%)"
+                        f"🛡️ Access Denied: You do not have permission to delete '{item.title}'. (Risk Score: {score}/100)"
                     )
         except (ImportError, AttributeError):
             # Fallback: show message if defense check fails
