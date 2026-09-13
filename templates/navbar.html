@@ -12,16 +12,6 @@
                 </div>
             </a>
 
-            <!-- Hackathon Defense Toggle -->
-            <div class="hackathon-toggle-wrapper">
-                <button class="hackathon-toggle-btn" id="hackathonToggleBtn" type="button" title="Toggle BOLA Defense System">
-                    <span class="hackathon-label">🛡️ INTEGRITY <span style="font-size: 0.65em; vertical-align: super;">hackathon™</span></span>
-                    <span class="hackathon-status" id="hackathonStatus">ON</span>
-                </button>
-                <div class="vulnerability-warning vulnerability-hidden" id="vulnerabilityWarning">
-                    <span class="warning-text">⚠️ VULNERABLE</span>
-                </div>
-            </div>
         </div>
 
         <!-- Right Side Nav Actions (Minimal & Clean) -->
@@ -69,72 +59,3 @@
     </div>
 </header>
 
-<script>
-    // Initialize defense state on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        const statusEl = document.getElementById('hackathonStatus');
-        const button = document.getElementById('hackathonToggleBtn');
-        const warningEl = document.getElementById('vulnerabilityWarning');
-
-        // Try to get initial state from server
-        fetch('/toggle-defense-status', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(r => r.json())
-        .catch(() => ({ defense_enabled: true }))
-        .then(data => {
-            if (data.defense_enabled) {
-                button?.classList.remove('hackathon-off');
-                statusEl.textContent = 'ON';
-                warningEl.classList.add('vulnerability-hidden');
-            } else {
-                button?.classList.add('hackathon-off');
-                statusEl.textContent = 'OFF';
-                warningEl.classList.remove('vulnerability-hidden');
-            }
-        });
-    });
-
-    // Hackathon Defense Toggle Handler
-    document.getElementById('hackathonToggleBtn')?.addEventListener('click', async function(e) {
-        e.preventDefault();
-        try {
-            const response = await fetch('/toggle-defense', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
-                },
-                body: JSON.stringify({})
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                const button = this;
-                const statusEl = document.getElementById('hackathonStatus');
-                const warningEl = document.getElementById('vulnerabilityWarning');
-
-                if (data.defense_enabled) {
-                    button.classList.remove('hackathon-off');
-                    statusEl.textContent = 'ON';
-                    warningEl.classList.add('vulnerability-hidden');
-                } else {
-                    button.classList.add('hackathon-off');
-                    statusEl.textContent = 'OFF';
-                    warningEl.classList.remove('vulnerability-hidden');
-                }
-
-                button.style.animation = 'pulse 0.6s ease-out';
-                setTimeout(() => {
-                    button.style.animation = '';
-                }, 600);
-            }
-        } catch (error) {
-            console.error('Error toggling defense system:', error);
-        }
-    });
-</script>
