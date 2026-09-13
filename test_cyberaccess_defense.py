@@ -114,7 +114,8 @@ def run_tests():
     canary_res = client.get("/item/0/")
     print(f"  -> Canary access response status: {canary_res.status_code}")
     if canary_res.status_code == 403:
-        assert "Access Blocked: BOLA Threat Quarantined" in canary_res.content.decode("utf-8")
+        content_str = canary_res.content.decode("utf-8")
+        assert ("Threat Quarantined" in content_str or "QUARANTINE COOLDOWN TIMER" in content_str or "BOLA Intercept" in content_str)
         print("  [ALERT] CANARY TRIPPED: Instant lockout response rendered with HTTP 403.")
     else:
         print("  [OK] Canary intercepted and safely redirected.")

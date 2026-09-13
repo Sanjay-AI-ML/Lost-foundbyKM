@@ -422,7 +422,15 @@
                 <div class="meta-label">BOLA Defense Tier</div>
                 <div class="meta-value">
                     <i class="fa-solid fa-gavel" style="color: #f59e0b;"></i>
-                    <span>STRIKE {{ strike_count|default:1 }} OF 3 (Soft Lockout)</span>
+                    <span>
+                        {% if strike_count == 1 %}
+                            STRIKE 1 OF 3 (Soft Lockout &bull; 2m cooldown)
+                        {% elif strike_count == 2 %}
+                            STRIKE 2 OF 3 (Hard Lockout &bull; 30m cooldown)
+                        {% else %}
+                            STRIKE 3 OF 3 (Permanent Ban Pending Approval)
+                        {% endif %}
+                    </span>
                 </div>
             </div>
         </div>
@@ -431,7 +439,10 @@
         <div class="timer-stage">
             <div class="timer-headline">
                 <span class="live-pulse-dot"></span>
-                <span>QUARANTINE COOLDOWN TIMER &bull; STRIKE {{ strike_count|default:1 }}/3</span>
+                <span>
+                    QUARANTINE COOLDOWN TIMER &bull; STRIKE {{ strike_count|default:1 }}/3
+                    ({% if strike_count == 1 %}2-Minute Cooldown{% elif strike_count == 2 %}30-Minute Cooldown{% else %}Permanent Ban{% endif %})
+                </span>
             </div>
 
             <div class="timer-display">
@@ -566,7 +577,7 @@
                         statusIndicator.innerHTML = '<i class="fa-solid fa-lock-open"></i> Clearance Restored';
                     }
                     setTimeout(() => {
-                        window.location.reload();
+                        window.location.href = '/?clearance_restored=1';
                     }, 1800);
                 } else {
                     updateDisplay();

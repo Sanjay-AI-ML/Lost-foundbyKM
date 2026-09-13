@@ -404,7 +404,7 @@ class CyberAccessSecurityMiddleware:
                         "decision": "block",
                         "score": 100.0,
                         "category": "Attack",
-                        "signals": ["temporarily_blocked", f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m"],
+                        "signals": ["temporarily_blocked", "strike_1_soft_lockout_2m" if strike_count == 1 else ("strike_2_hard_lockout_30m" if strike_count == 2 else "strike_3_pending_admin_approval")],
                         "explanations": [
                             "Your identity has been quarantined due to malicious object enumeration or security violations.",
                             f"Strike {strike_count}/3: Active quarantine cooldown penalty enforced across all application endpoints.",
@@ -415,7 +415,7 @@ class CyberAccessSecurityMiddleware:
                         "lockout_remaining_seconds": rem_sec,
                         "lockout_expires_at": expires_at,
                         "strike_count": strike_count,
-                        "lockout_type": f"strike_{strike_count}_soft_lockout_2m" if rem_sec <= 120 else f"strike_{strike_count}_hard_lockout_30m",
+                        "lockout_type": "soft_lockout_2m" if strike_count == 1 else ("hard_lockout_30m" if strike_count == 2 else "permanent_ban"),
                     }
                     return render_cyberaccess_blocked(request, context, status=403)
 
@@ -603,7 +603,7 @@ class CyberAccessSecurityMiddleware:
                                 "strike_count": strike_count,
                                 "lockout_remaining_seconds": rem_sec,
                                 "lockout_expires_at": expires_at,
-                                "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
+                                "lockout_type": "soft_lockout_2m" if strike_count == 1 else ("hard_lockout_30m" if strike_count == 2 else "permanent_ban"),
                             }
                             return render_cyberaccess_blocked(request, context, status=403)
                     # For all non-quarantined 404s, render custom 404 template instead of technical debug screen
@@ -658,7 +658,7 @@ class CyberAccessSecurityMiddleware:
                 "lockout_remaining_seconds": rem_sec,
                 "lockout_expires_at": expires_at,
                 "strike_count": strike_count,
-                "lockout_type": "soft_lockout_2m" if rem_sec <= 120 else "hard_lockout_30m",
+                "lockout_type": "soft_lockout_2m" if strike_count == 1 else ("hard_lockout_30m" if strike_count == 2 else "permanent_ban"),
             }
             return render_cyberaccess_blocked(request, context, status=403)
         return None
