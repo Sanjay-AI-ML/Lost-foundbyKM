@@ -307,6 +307,11 @@
     100% { transform: scale(1); }
 }
 
+/* Ensure hidden attribute always works */
+[hidden] {
+    display: none !important;
+}
+
 /* Vulnerability Warning - Shows when defense is OFF */
 .vulnerability-warning {
     display: flex;
