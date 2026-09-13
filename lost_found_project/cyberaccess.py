@@ -78,6 +78,21 @@ class CyberAccessClient:
                 "explanations": [],
             }
 
+        # Check if BOLA defense system is toggled off (demo mode for judges)
+        try:
+            from lost_found_project.attack_api import is_bola_defense_enabled
+            if not is_bola_defense_enabled():
+                # Defense system disabled - allow all requests (vulnerable mode for demo)
+                return {
+                    "decision": "allow",
+                    "score": 0.0,
+                    "category": "Demo_Mode_Unprotected",
+                    "signals": ["defense_system_disabled"],
+                    "explanations": ["BOLA defense system is DISABLED - system is VULNERABLE"],
+                }
+        except (ImportError, AttributeError):
+            pass  # Defense toggle not available, continue with normal checks
+
         # Check for Canary Honeypots
         is_canary = str(resource_id).strip() in CYBERACCESS_CANARIES
         if is_canary:

@@ -178,3 +178,42 @@ def reset_demo(request):
         response['Access-Control-Allow-Origin'] = '*'
         response['Access-Control-Allow-Methods'] = 'POST'
         return response
+
+
+# Global toggle state for BOLA defense system
+_BOLA_DEFENSE_ENABLED = True
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def toggle_defense_system(request):
+    """
+    Toggle BOLA defense system on/off for hackathon demo
+    Shows what happens when defenses are active vs disabled
+    """
+    global _BOLA_DEFENSE_ENABLED
+    try:
+        _BOLA_DEFENSE_ENABLED = not _BOLA_DEFENSE_ENABLED
+
+        response = JsonResponse({
+            'success': True,
+            'defense_enabled': _BOLA_DEFENSE_ENABLED,
+            'message': f'BOLA Defense System is now {"ON" if _BOLA_DEFENSE_ENABLED else "OFF"}',
+            'status': 'PROTECTED' if _BOLA_DEFENSE_ENABLED else 'VULNERABLE'
+        })
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'POST'
+        return response
+    except Exception as e:
+        response = JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=500)
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Methods'] = 'POST'
+        return response
+
+
+def is_bola_defense_enabled():
+    """Check if BOLA defense system is enabled"""
+    return _BOLA_DEFENSE_ENABLED
