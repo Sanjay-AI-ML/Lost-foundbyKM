@@ -18,8 +18,8 @@ class Command(BaseCommand):
             if created:
                 user.set_unusable_password()
                 user.save()
-            elif user.is_staff or user.is_superuser:
-                raise CommandError("The demo must use ordinary users, never staff accounts.")
+            elif user.is_staff or user.is_superuser or not user.is_active or user.has_usable_password():
+                raise CommandError("A reserved demo username belongs to an existing account. Use an isolated database.")
             users[name] = user
         category, _ = Category.objects.get_or_create(slug="cyberaccess-demo", defaults={"name": "CyberAccess demo"})
         item, _ = Item.objects.get_or_create(user=users["finder"], title="Demo: Found wallet", defaults={

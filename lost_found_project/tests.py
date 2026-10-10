@@ -82,6 +82,17 @@ class ApiKeyAdapterTests(SimpleTestCase):
         self.guard.get_lockout_status("user/../other?tenant=bad")
         self.assertIn("user%2F..%2Fother%3Ftenant%3Dbad", self.http.get.call_args.args[0])
 
+    def test_lockout_timeout_is_not_reported_as_a_clear_account(self):
+        self.http.get.side_effect = requests.Timeout()
+        self.assertFalse(self.guard.get_lockout_status("u")["available"])
+
+    def test_lockout_bad_credentials_are_reported_even_in_fail_open_mode(self):
+        self.guard.fail_open = True
+        self.http.get.return_value.status_code = 401
+        status = self.guard.get_lockout_status("u")
+        self.assertFalse(status["available"])
+        self.assertTrue(status["credentials_rejected"])
+
 
 @override_settings(CYBERACCESS_ENABLED=True, CYBERACCESS_API_KEY="sk_isolated_unit_test", CYBERACCESS_DEMO_ENABLED=True,
                    CYBERACCESS_NOTIFICATIONS_ENABLED=True, CYBERACCESS_LOG_ALLOWED=False, CYBERACCESS_NOTIFICATION_COOLDOWN_SECONDS=60)
@@ -95,6 +106,7 @@ class PortalEnforcementTests(TestCase):
         self.claim = Claim.objects.create(item=self.item, claimant=self.alice, proof_details="PRIVATE_PROOF_MUST_NOT_LEAK", contact_info="private@example.test")
         self.other = Claim.objects.create(item=self.item, claimant=self.mallory, proof_details="OTHER_PRIVATE_PROOF", contact_info="other@example.test")
         self.guard = Mock(enabled=True)
+        self.guard.fail_open = False
         self.guard.get_lockout_status.return_value = {"is_locked": False}
         self.guard.authorize.side_effect = lambda subject, resource, authorized, **kwargs: {
             "decision": "allow" if authorized else "deny", "score": 5 if authorized else 25,
@@ -287,3 +299,58 @@ class PortalEnforcementTests(TestCase):
         self.assertEqual(data["block_page_url"], f"/claims/status/{self.claim.pk}/")
         self.assertNotIn(b"sk_isolated_unit_test", response.content)
         self.assertNotIn(b"PRIVATE_PROOF_MUST_NOT_LEAK", response.content)
+
+    def test_failed_quarantine_lookup_stops_item_and_claim_writes_before_the_view(self):
+        self.guard.get_lockout_status.return_value = {"available": False}
+        before = (Item.objects.count(), Claim.objects.count())
+        for path in ("/item/add/lost/", "/item/add/found/", f"/claims/submit/{self.item.pk}/"):
+            response = self.client.post(path, {"title": "Should never be created", "proof_details": "Should never be stored"})
+            self.assertEqual(response.status_code, 503)
+            self.assertEqual(response["X-CyberAccess-Source"], "local_fallback")
+        self.assertEqual(before, (Item.objects.count(), Claim.objects.count()))
+        self.guard.authorize.assert_not_called()
+
+    def test_bad_quarantine_credentials_cannot_fail_open(self):
+        self.guard.fail_open = True
+        self.guard.get_lockout_status.return_value = {"available": False, "credentials_rejected": True}
+        self.assertEqual(self.client.get("/item/add/lost/").status_code, 503)
+
+    def test_profile_and_password_routes_are_protected_during_quarantine(self):
+        self.guard.get_lockout_status.return_value = {"is_locked": True, "lockout_remaining_seconds": 120}
+        for path in ("/accounts/profile/", "/accounts/profile/edit/", "/accounts/password/change/", "/profile/"):
+            self.assertEqual(self.client.get(path).status_code, 403)
+        self.assertEqual(self.client.get("/accounts/logout/").status_code, 302)
+
+    @override_settings(DEBUG=True)
+    def test_demo_login_refuses_privileged_and_password_based_accounts(self):
+        self.client.logout()
+        for field in ("is_staff", "is_superuser"):
+            setattr(self.alice, field, True)
+            self.alice.save()
+            self.assertEqual(self.client.post("/cyberaccess/demo/", {"persona": "alice"}).status_code, 400)
+            self.assertNotIn("_auth_user_id", self.client.session)
+            setattr(self.alice, field, False)
+        self.alice.set_password("This-is-not-a-demo-account-123!")
+        self.alice.save()
+        self.assertEqual(self.client.post("/cyberaccess/demo/", {"persona": "alice"}).status_code, 400)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_missing_receipt_outage_returns_503_instead_of_middleware_exception(self):
+        self.guard.authorize.side_effect = None
+        self.guard.authorize.return_value = {"decision": "deny", "score": None, "source": "local_fallback", "signals": ["engine_unavailable"]}
+        response = self.client.get("/claims/approved/999999/")
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response["X-CyberAccess-Decision"], "deny")
+
+    def test_non_owner_cannot_edit_or_delete_another_users_item(self):
+        for action in ("edit", "delete"):
+            response = self.client.post(f"/item/{self.item.pk}/{action}/", {"title": "Modified without permission"})
+            self.assertEqual(response["X-CyberAccess-Decision"], "deny")
+            self.assertTrue(Item.objects.filter(pk=self.item.pk, title="Private test wallet").exists())
+
+    def test_locked_owner_cannot_edit_or_delete_their_own_item(self):
+        self.client.force_login(self.finder)
+        self.guard.get_lockout_status.return_value = {"is_locked": True, "lockout_remaining_seconds": 120}
+        for action in ("edit", "delete"):
+            self.assertEqual(self.client.post(f"/item/{self.item.pk}/{action}/").status_code, 403)
+            self.assertTrue(Item.objects.filter(pk=self.item.pk, title="Private test wallet").exists())

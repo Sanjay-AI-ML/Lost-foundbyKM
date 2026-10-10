@@ -14,6 +14,12 @@ from .cyberaccess import enforce_bola, get_client_subject, CyberAccessBOLAExcept
 PERSONAS = {"alice": "cyberaccess_demo_alice", "mallory": "cyberaccess_demo_mallory"}
 
 
+def _is_demo_persona(user):
+    # Seeded personas have no usable password and can never be privileged accounts.
+    return bool(user and user.is_authenticated and user.is_active and user.username in PERSONAS.values()
+                and not user.is_staff and not user.is_superuser and not user.has_usable_password())
+
+
 def _local_demo_only(request):
     try:
         local = ipaddress.ip_address(request.META.get("REMOTE_ADDR", "")).is_loopback
@@ -28,11 +34,11 @@ def demo_view(request):
     if request.method == "POST":
         username = PERSONAS.get(request.POST.get("persona"))
         user = User.objects.filter(username=username).first() if username else None
-        if not user:
-            return JsonResponse({"error": "Run seed_cyberaccess_demo first."}, status=400)
+        if not _is_demo_persona(user):
+            return JsonResponse({"error": "A safe demo fixture is missing. Run seed_cyberaccess_demo with isolated test data."}, status=400)
         login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         return redirect("cyberaccess_demo")
-    active = request.user.is_authenticated and request.user.username in PERSONAS.values()
+    active = _is_demo_persona(request.user)
     own = Claim.objects.filter(claimant=request.user).first() if active else None
     other = Claim.objects.filter(claimant__username__in=PERSONAS.values()).exclude(claimant=request.user).first() if active else None
     return render(request, "cyberaccess_demo.html", {"demo_active": active, "own_claim": own,
@@ -43,7 +49,7 @@ def demo_view(request):
 @require_POST
 def demo_check(request):
     _local_demo_only(request)
-    if not request.user.is_authenticated or request.user.username not in PERSONAS.values():
+    if not _is_demo_persona(request.user):
         return JsonResponse({"error": "Choose a test user first."}, status=401)
     action = request.POST.get("action")
     if action not in ("own", "other", "enumerate"):

@@ -91,19 +91,21 @@ class CyberAccessClient:
             return self._fallback(authorized, "engine_unavailable")
 
     def get_lockout_status(self, subject):
-        clear = {"is_locked": False, "lockout_remaining_seconds": 0, "strike_count": 0}
+        clear = {"is_locked": False, "lockout_remaining_seconds": 0, "strike_count": 0, "available": True}
         if not self.enabled:
             return clear
         try:
             response = self.session.get(f"{self.base_url}/lockout-status/{quote(str(subject), safe='')}",
                                         timeout=self.timeout, allow_redirects=False)
+            if response.status_code in (401, 403):
+                return {"available": False, "credentials_rejected": True}
             response.raise_for_status()
             data = response.json()
             if isinstance(data, dict) and type(data.get("is_locked")) is bool:
-                return data
+                return dict(data, available=True)
         except (requests.RequestException, ValueError):
             pass
-        return clear
+        return {"available": False, "credentials_rejected": False}
 
     def log_timer_event(self, subject, remaining_seconds, expires_at=None, strike_count=1, reason="Quarantine active"):
         if self.enabled:
@@ -159,9 +161,17 @@ class CyberAccessSecurityMiddleware:
 
     def __call__(self, request):
         # Login/logout remain available. Demo controls never release a real quarantine.
-        skip = request.path.startswith(("/static/", "/media/", "/accounts/", "/login/", "/logout/", "/register/", "/signup/", "/cyberaccess/demo/", "/notifications/"))
+        auth_paths = {"/accounts/login/", "/accounts/logout/", "/accounts/register/", "/login/", "/logout/", "/register/", "/signup/"}
+        skip = request.path in auth_paths or request.path.startswith(("/static/", "/media/", "/cyberaccess/demo/", "/notifications/"))
         if self.client.enabled and not skip and getattr(request.user, "is_authenticated", False):
             lockout = self.client.get_lockout_status(get_client_subject(request))
+            if lockout.get("available", True) is False and (not self.client.fail_open or lockout.get("credentials_rejected")):
+                result = {"decision": "deny", "score": None, "category": "Unavailable", "source": "local_fallback",
+                          "signals": ["api_key_rejected" if lockout.get("credentials_rejected") else "lockout_status_unavailable"],
+                          "explanations": ["CyberAccess could not verify account quarantine status."]}
+                request._bola_result = result
+                publish_security_feedback(request, result, "quarantine_status", "quarantine_gate")
+                return self._headers(self._decision_page(request, result), result)
             if lockout.get("is_locked"):
                 remembered = request.session.get("cyberaccess_block_decision", {})
                 same_block = (remembered.get("subject") == get_client_subject(request)
@@ -180,9 +190,13 @@ class CyberAccessSecurityMiddleware:
         if self.client.enabled and response.status_code == 404 and not getattr(request, "_bola_evaluated", False):
             match = self.object_path.search(request.path)
             if match:
-                _, action, result = enforce_bola(request, match.group(1), False, "object_probe")
-                if action == "block":
-                    response = self._decision_page(request, result)
+                try:
+                    _, action, result = enforce_bola(request, match.group(1), False, "object_probe")
+                except CyberAccessBOLAException as exc:
+                    response = self._decision_page(request, exc.payload)
+                else:
+                    if action == "block":
+                        response = self._decision_page(request, result)
         result = getattr(request, "_bola_result", None)
         return self._headers(response, result) if result else response
 
