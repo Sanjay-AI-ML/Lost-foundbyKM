@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.core.paginator import Paginator
+from django.conf import settings
 from .models import Item, Category
 from .forms import ItemForm, ItemSearchForm
 from claims.models import Claim
@@ -95,6 +96,9 @@ def home_view(request):
 
 @login_required
 def dashboard_view(request):
+    allowed, _, details = enforce_bola(request, f"user_dashboard_{request.user.pk}", True, "portal_dashboard")
+    if not allowed:
+        raise CyberAccessBOLAException(details)
     user_items = Item.objects.filter(user=request.user)
     user_lost = user_items.filter(item_type='LOST')
     user_found = user_items.filter(item_type='FOUND')
@@ -111,6 +115,8 @@ def dashboard_view(request):
         'received_claims': received_claims,
         'my_claims': my_claims,
         'pending_claims_count': received_claims.filter(status='PENDING').count(),
+        'cyberaccess_configured': settings.CYBERACCESS_ENABLED,
+        'cyberaccess_demo_available': settings.DEBUG and settings.CYBERACCESS_DEMO_ENABLED,
     }
     return render(request, 'items/dashboard.html', context)
 
@@ -217,13 +223,15 @@ def item_detail_view(request, pk):
         return render(request, '404.html', context, status=404)
 
     # Valid item access telemetry
-    enforce_bola(
+    allowed, action, details = enforce_bola(
         request=request,
         resource_id=f"{res_prefix}_{pk}",
         is_authorized=True,
         resource_name="items_detail",
         http_verb=request.method,
     )
+    if not allowed:
+        raise CyberAccessBOLAException(details)
     related_items = Item.objects.filter(category=item.category, item_type=item.item_type).exclude(pk=item.pk)[:4]
     
     # Check if user already claimed this item

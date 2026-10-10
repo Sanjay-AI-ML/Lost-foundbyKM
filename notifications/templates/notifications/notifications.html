@@ -8,7 +8,7 @@
     <div class="dashboard-header-bar">
         <div>
             <h2><i class="fa-solid fa-bell text-primary"></i> Notifications</h2>
-            <p class="text-muted">Updates on your submitted claims, reported items, and community activity.</p>
+            <p class="text-muted">Security alerts, claim updates, and activity on your account.</p>
         </div>
         {% if notifications %}
             <a href="{% url 'notifications:mark_all_as_read' %}" class="btn btn-outline btn-sm">
@@ -21,7 +21,9 @@
         {% for notif in notifications %}
             <div class="notification-item-card {% if not notif.is_read %}unread{% endif %}">
                 <div class="notif-icon">
-                    {% if "Approved" in notif.title %}
+                    {% if "CyberAccess:" in notif.title %}
+                        <i class="fa-solid fa-shield-halved text-warning" aria-label="Security alert"></i>
+                    {% elif "Approved" in notif.title %}
                         <i class="fa-solid fa-circle-check text-success"></i>
                     {% elif "Rejected" in notif.title %}
                         <i class="fa-solid fa-circle-xmark text-danger"></i>

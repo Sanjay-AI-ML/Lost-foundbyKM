@@ -66,37 +66,12 @@ def claim_status_view(request, claim_id):
         )
         if action == "block":
             raise CyberAccessBOLAException(details)
-        score = int(details.get("score", 20))
-        category = details.get("category", "Normal")
-
-        # Only show security messages if defense is enabled
-        try:
-            from lost_found_project.attack_api import is_bola_defense_enabled
-            if is_bola_defense_enabled():
-                if score >= 70:
-                    messages.warning(
-                        request,
-                        f"⚠️ Security Alert: High-risk anomalous behavior detected! Reaching 90+ Risk will quarantine your workstation. (Risk Score: {score}/100 — High Risk)"
-                    )
-                elif score >= 40:
-                    messages.warning(
-                        request,
-                        f"⚠️ Notice: Suspicious access pattern flagged quietly. (Risk Score: {score}/100 — Suspicious)"
-                    )
-                else:
-                    messages.error(
-                        request,
-                        f"Claim #{claim_id} was not found. (Risk Score: {score}/100 — Normal)"
-                    )
-        except (ImportError, AttributeError):
-            # Fallback: show message if defense check fails
-            messages.error(request, f"Claim #{claim_id} was not found.")
-
+        # Security feedback is driven centrally by the API decision, not the old demo toggle.
         return redirect('items:dashboard')
 
     is_claimant = (request.user == claim.claimant)
     is_item_owner = (request.user == claim.item.user)
-    is_authorized = bool(is_claimant or is_item_owner or request.user.is_staff)
+    is_authorized = bool(is_item_owner or request.user.is_staff) if request.method == 'POST' else bool(is_claimant or is_item_owner or request.user.is_staff)
 
     # CyberAccess Deterministic Gate + Behavioral Engine
     allowed, action, details = enforce_bola(
@@ -110,32 +85,6 @@ def claim_status_view(request, claim_id):
     if not allowed:
         if action == "block":
             raise CyberAccessBOLAException(details)
-        score = int(details.get("score", 25))
-        category = details.get("category", "Normal")
-
-        # Only show security messages if defense is enabled
-        try:
-            from lost_found_project.attack_api import is_bola_defense_enabled
-            if is_bola_defense_enabled():
-                if score >= 70:
-                    messages.warning(
-                        request,
-                        f"⚠️ Security Alert: High-risk anomalous behavior detected! Reaching 90+ Risk will quarantine your workstation. (Risk Score: {score}/100 — High Risk)"
-                    )
-                elif score >= 40:
-                    messages.warning(
-                        request,
-                        f"⚠️ Notice: Suspicious access pattern flagged quietly. (Risk Score: {score}/100 — Suspicious)"
-                    )
-                else:
-                    messages.error(
-                        request,
-                        f"🛡️ Access Denied: You are not authorized to view this private claim. (Risk Score: {score}/100 — Normal)"
-                    )
-        except (ImportError, AttributeError):
-            # Fallback: show message if defense check fails
-            messages.error(request, "🛡️ Access Denied: You are not authorized to view this claim.")
-
         return redirect('items:dashboard')
 
     review_form = None
@@ -189,16 +138,26 @@ def claim_status_view(request, claim_id):
 @login_required
 def claim_success_view(request, claim_id):
     claim = get_object_or_404(Claim, pk=claim_id, claimant=request.user)
+    _guard_claim_receipt(request, claim)
     return render(request, 'claims/claim_success.html', {'claim': claim})
 
 
 @login_required
 def claim_approved_view(request, claim_id):
     claim = get_object_or_404(Claim, pk=claim_id)
+    _guard_claim_receipt(request, claim)
     return render(request, 'claims/claim_approved.html', {'claim': claim})
 
 
 @login_required
 def claim_rejected_view(request, claim_id):
     claim = get_object_or_404(Claim, pk=claim_id)
+    _guard_claim_receipt(request, claim)
     return render(request, 'claims/claim_rejected.html', {'claim': claim})
+
+
+def _guard_claim_receipt(request, claim):
+    authorized = bool(request.user == claim.claimant or request.user == claim.item.user or request.user.is_staff)
+    allowed, _, details = enforce_bola(request, f"claim_{claim.pk}", authorized, "claims_receipt")
+    if not allowed:
+        raise CyberAccessBOLAException(details)

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lost & Found integration | CyberAccess</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f4f7fc;color:#15213a;font:16px/1.6 system-ui,sans-serif}main{max-width:1000px;margin:auto;padding:32px 24px 60px}nav{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}a{color:#245bdb}h1{font-size:clamp(26px,5vw,38px);line-height:1.2;letter-spacing:-1px;margin:32px 0 12px}h2{font-size:19px;margin:0 0 12px}p{color:#59677f}.card{background:white;border:1px solid #dce4f0;border-radius:16px;padding:24px;margin-top:20px}.tag{display:inline-block;background:#eaf0ff;color:#245bdb;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:650}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.scenario{display:flex;flex-direction:column;align-items:flex-start}.scenario p{flex:1}button{border:0;border-radius:9px;background:#245bdb;color:white;padding:12px 16px;font:600 14px system-ui;cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid #edab25;outline-offset:4px}button.secondary{background:#eaf0ff;color:#245bdb}button:disabled{opacity:.5;cursor:wait}.personas{display:flex;gap:10px;flex-wrap:wrap}.personas form{margin:0}code{word-break:break-word;font-size:13px;background:#f4f7fc;padding:3px 6px;border-radius:4px}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:12px;border-bottom:1px solid #e4eaf2}th{color:#59677f}#status{margin:0 0 12px;font-weight:600}.small{font-size:14px}.empty{padding:20px 0;color:#59677f}.flow{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:18px 0}.flow span{padding:10px 14px;background:#f4f7fc;border-radius:9px}.allow{color:#14744b}.deny,.block{color:#b1363b}@media(max-width:700px){main{padding:20px 16px}.grid{grid-template-columns:1fr}.card{padding:20px}nav{font-size:14px}}
+  </style>
+</head>
+<body><main>
+  <nav><strong>Lost & Found <span style="color:#59677f">+ CyberAccess</span></strong><div><a href="/">Open portal</a> &nbsp; {% if user.is_authenticated %}<a href="{% url 'notifications:list' %}">Alerts (<span id="alert-count">{{ unread_notifications_count }}</span>)</a> &nbsp; {% endif %}<a href="{{ console_url }}" target="_blank" rel="noopener">CyberAccess dashboard ↗</a></div></nav>
+  <h1>See API-key protection in action.</h1>
+  <p>Try real requests against the CyberAccess backend. Your portal checks who owns a claim; CyberAccess adds behavioral risk detection.</p>
+  <div class="flow"><span>Portal ownership check</span> → <span>Server sends API key</span> → <span>CyberAccess decision + audit event</span></div>
+  <section class="card">
+    <span class="tag">Local demonstration</span><h2 style="margin-top:16px">1. Choose a test user</h2>
+    <div class="personas">
+      <form method="post">{% csrf_token %}<input type="hidden" name="persona" value="alice"><button class="secondary">Use Alice</button></form>
+      <form method="post">{% csrf_token %}<input type="hidden" name="persona" value="mallory"><button class="secondary">Use Mallory</button></form>
+    </div>
+    {% if demo_active %}<p class="small">Acting as <strong>{{ user.first_name }}</strong> · Subject <code>{{ subject }}</code></p>{% else %}<p class="small">These are synthetic users and claims. Choose a user to enable the tests.</p>{% endif %}
+    <p class="small">{% if key_configured %}Tenant API key configured on the server. The browser never receives it.{% else %}<strong>API key missing.</strong> Configure the portal's server environment first.{% endif %}</p>
+  </section>
+  <h2 style="margin-top:28px">2. Try a request</h2>
+  <div class="grid">
+    <section class="card scenario"><span class="tag">Legitimate access</span><h2 style="margin-top:16px">Read my claim</h2><p>Your ownership check passes. A normal account should receive an allow decision.</p><button data-action="own" {% if not demo_active %}disabled{% endif %}>Check my claim</button>{% if own_claim %}<a class="small" style="margin-top:14px" href="{% url 'claims:claim_status' own_claim.pk %}">Open the actual claim page ↗</a>{% endif %}</section>
+    <section class="card scenario"><span class="tag">Unauthorized access</span><h2 style="margin-top:16px">Read another claim</h2><p>Try someone else's private claim. The portal refuses access and CyberAccess records the attempt.</p><button data-action="other" {% if not demo_active %}disabled{% endif %}>Try another claim</button>{% if other_claim %}<a class="small" style="margin-top:14px" href="{% url 'claims:claim_status' other_claim.pk %}">Try the actual protected page ↗</a>{% endif %}</section>
+    <section class="card scenario"><span class="tag">Behavioral detection</span><h2 style="margin-top:16px">Probe object IDs</h2><p>Send up to ten denied requests for nonexistent claims. Watch risk rise and see whether quarantine triggers.</p><button data-action="enumerate" {% if not demo_active %}disabled{% endif %}>Run enumeration test</button></section>
+  </div>
+  <section class="card" aria-labelledby="results-title"><h2 id="results-title">3. Inspect the live decision</h2><p id="status" role="status" aria-live="polite">No requests sent yet.</p><div class="table-wrap"><table><thead><tr><th>Resource</th><th>Local ownership</th><th>Decision</th><th>Risk / 100</th><th>Signals</th></tr></thead><tbody id="results"><tr><td colspan="5" class="empty">Choose a request above. This table shows actual backend responses.</td></tr></tbody></table></div><div id="security-feedback" role="status" aria-live="polite" hidden><h3 id="feedback-title"></h3><p id="feedback-message"></p><a href="{% url 'notifications:list' %}">View saved security alerts</a></div><p><a id="block-page-link" hidden>View the actual block page →</a></p><p class="small">Open <strong>Activity</strong> in this demo tenant's CyberAccess dashboard to see the same requests. A quarantined user stays blocked even when their local ownership check passes.</p></section>
+</main>
+<script>
+  const buttons = [...document.querySelectorAll('[data-action]')];
+  const status = document.getElementById('status');
+  const results = document.getElementById('results');
+  for (const button of buttons) button.addEventListener('click', async () => {
+    buttons.forEach(b => b.disabled = true);
+    status.textContent = 'Contacting CyberAccess…';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch('{% url "cyberaccess_demo_check" %}', {method:'POST', credentials:'same-origin', signal:controller.signal,
+        headers:{'X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]').value}, body:new URLSearchParams({action:button.dataset.action})});
+      const data = await response.json();
+      if (!data.checks) throw new Error(data.error || 'The portal could not complete this test.');
+      results.replaceChildren();
+      for (const row of data.checks) {
+        const tr = document.createElement('tr');
+        for (const value of [row.resource_id, row.authorized ? 'Passed' : 'Denied', row.decision.toUpperCase(), row.score ?? 'Unavailable', (row.signals || []).join(', ') || 'No behavioral signals']) {
+          const td = document.createElement('td');td.textContent = value;tr.append(td);
+        }
+        tr.children[2].className = row.decision;results.append(tr);
+      }
+      const last = data.checks[data.checks.length - 1];
+      const feedback = document.getElementById('security-feedback');
+      feedback.hidden = !data.notification;
+      if (data.notification) {
+        document.getElementById('feedback-title').textContent = data.notification.title;
+        document.getElementById('feedback-message').textContent = data.notification.message;
+      }
+      document.getElementById('alert-count').textContent = data.unread_notifications;
+      const blockLink = document.getElementById('block-page-link');
+      blockLink.hidden = !data.block_page_url;
+      if (data.block_page_url) blockLink.href = data.block_page_url;
+      status.textContent = data.live ? `Live CyberAccess response · ${data.checks.length} request(s) · ${last.decision.toUpperCase()}${last.lockout_remaining_s ? ' · quarantine: ' + last.lockout_remaining_s + 's' : ''}` : 'CyberAccess unavailable or API key rejected. Showing the local fallback; no live protection result was received.';
+    } catch (error) { status.textContent = error.name === 'AbortError' ? 'The test timed out. Check that CyberAccess is running, then retry.' : error.message; }
+    finally { clearTimeout(timer);buttons.forEach(b => b.disabled = false); }
+  });
+</script></body></html>

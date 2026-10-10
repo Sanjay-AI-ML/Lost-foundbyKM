@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}{% if decision == 'block' %}Account protected{% else %}Access protected{% endif %} | Lost & Found{% endblock %}
+{% block extra_css %}
+<style>
+  .security-card{max-width:680px;margin:48px auto;padding:32px;border:1px solid #22364b;border-radius:20px;background:#0d1021;color:#f4f7fc;box-shadow:0 12px 36px #0003}
+  .security-label{color:#ffc36b;font-weight:700;font-size:14px;letter-spacing:.04em}.security-card h1{color:#f4f7fc;font-size:clamp(26px,5vw,34px);line-height:1.25;margin:14px 0}.security-card p{line-height:1.65;color:#acb7cf}.security-detail{padding:18px;background:#171e33;border-radius:12px;margin:24px 0}.security-detail p{margin:6px 0}.security-timer{font-variant-numeric:tabular-nums;color:#f4f7fc;font-size:24px}.security-actions{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0 12px}.security-actions .btn-outline{color:#c3d7f7;border-color:#3c506d}.security-note{font-size:14px}@media(max-width:700px){.security-card{margin:24px 16px;padding:24px}.security-actions .btn{width:100%}}
+  .toast-container{position:static;width:calc(100% - 32px);max-width:680px;margin:24px auto 0}.toast-warning{background:#211b13!important}.toast-alert{min-width:0}
+  @media(max-width:480px){.nav-user-name{display:none}.navbar-container{gap:12px}.navbar-actions{gap:10px}}
+</style>
+{% endblock %}
+{% block content %}
+<section class="security-card" aria-labelledby="security-title">
+  <div class="security-label">Protected by CyberAccess</div>
+  {% if source == 'local_fallback' %}<h1 id="security-title">Security service unavailable</h1><p>The portal could not verify this request. Please try again shortly.</p>
+  {% elif decision == 'block' %}<h1 id="security-title">This account is temporarily blocked</h1><p>CyberAccess detected a risky access pattern. Your request was stopped before private data could be returned.</p>
+  {% else %}<h1 id="security-title">Access denied</h1><p>Your account does not have permission to access this information.</p>{% endif %}
+  <div class="security-detail">
+    <p>Decision: <strong>{{ decision|upper }}</strong></p>
+    {% if score != None %}<p>Risk score{% if score_context == 'at_block' %} at block{% endif %}: <strong>{{ score|floatformat:'-2' }}/100</strong></p>{% endif %}
+    {% if lockout_remaining_seconds %}<p>Quarantine remaining: <strong id="quarantine-timer" class="security-timer" data-remaining="{{ lockout_remaining_seconds }}" data-expires="{{ quarantine_expiry|date:'c' }}">{{ lockout_remaining_seconds }} seconds</strong></p><p id="retry-guidance" class="security-note">Wait for the cooldown, then check access again.</p>{% endif %}
+  </div>
+  <div class="security-actions">
+    <a href="{{ request.path }}" class="btn btn-primary">Check access again</a>
+    <a href="{% url 'notifications:list' %}" class="btn btn-outline">View my security alerts</a>
+  </div>
+  <p class="security-note">Your notification inbox and sign-out remain available during a quarantine.</p>
+  <a href="{% url 'items:dashboard' %}">Return to your dashboard</a> &nbsp; <a href="{% url 'accounts:logout' %}">Sign out</a>
+</section>
+{% endblock %}
+{% block extra_js %}
+<script>
+  (() => {
+    const timer = document.getElementById('quarantine-timer');
+    if (!timer) return;
+    const absoluteExpiry = Date.parse(timer.dataset.expires);
+    const expiry = Number.isFinite(absoluteExpiry) ? absoluteExpiry : Date.now() + Number(timer.dataset.remaining) * 1000;
+    const update = () => {
+      const remaining = Math.max(0, Math.ceil((expiry - Date.now()) / 1000));
+      timer.textContent = `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`;
+      if (!remaining) {
+        document.getElementById('retry-guidance').textContent = 'Cooldown timer ended. Check access again to verify your account status.';
+        return false;
+      }
+      return true;
+    };
+    if (update()) {
+      const interval = setInterval(() => { if (!update()) clearInterval(interval); }, 1000);
+    }
+  })();
+</script>
+{% endblock %}

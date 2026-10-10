@@ -8,12 +8,21 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load server-only integration settings before reading any environment options.
+_env_file = BASE_DIR / '.env'
+if _env_file.exists():
+    for _line in _env_file.read_text(encoding='utf-8-sig').splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith('#') and '=' in _line:
+            _key, _value = _line.split('=', 1)
+            os.environ.setdefault(_key.strip(), _value.strip().strip('\"\''))
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-lost-found-secret-key-change-in-production')
 
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() in ('true', '1', 'yes')
 
 ALLOWED_HOSTS = ['*']
 
@@ -73,7 +82,7 @@ ASGI_APPLICATION = 'lost_found_project.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'database' / 'db.sqlite3',
+        'NAME': os.environ.get('DJANGO_DATABASE_PATH', str(BASE_DIR / 'database' / 'db.sqlite3')),
     }
 }
 
@@ -118,22 +127,35 @@ LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'items:home'
 LOGOUT_REDIRECT_URL = 'accounts:login'
 
-# Auto-load .env if present
-_env_file = BASE_DIR / '.env'
-if _env_file.exists():
-    for _l in _env_file.read_text(encoding='utf-8').splitlines():
-        _l = _l.strip()
-        if _l and not _l.startswith('#') and '=' in _l:
-            _k, _v = _l.split('=', 1)
-            os.environ.setdefault(_k.strip(), _v.strip())
-
 # CyberAccess BOLA Defense Engine Configuration (OWASP API1:2023)
-CYBERACCESS_ENABLED = os.environ.get('CYBERACCESS_ENABLED', 'true').lower() in ('true', '1', 'yes')
+CYBERACCESS_API_KEY = os.environ.get('CYBERACCESS_API_KEY', '')
+CYBERACCESS_ENABLED = os.environ.get('CYBERACCESS_ENABLED', str(bool(CYBERACCESS_API_KEY))).lower() in ('true', '1', 'yes')
 CYBERACCESS_API_URL = os.environ.get('CYBERACCESS_API_URL', 'http://127.0.0.1:8000')
-CYBERACCESS_API_KEY = os.environ.get('CYBERACCESS_API_KEY', 'dev_test_key')
-CYBERACCESS_FAIL_OPEN = os.environ.get('CYBERACCESS_FAIL_OPEN', 'true').lower() in ('true', '1', 'yes')
+CYBERACCESS_FAIL_OPEN = os.environ.get('CYBERACCESS_FAIL_OPEN', 'false').lower() in ('true', '1', 'yes')
 CYBERACCESS_TIMEOUT = float(os.environ.get('CYBERACCESS_TIMEOUT', '2.0'))
-CYBERACCESS_CANARIES = os.environ.get('CYBERACCESS_CANARIES', '0,999999,canary_admin_vault').split(',')
+CYBERACCESS_CANARIES = [value for value in os.environ.get('CYBERACCESS_CANARIES', '').split(',') if value]
+CYBERACCESS_DEMO_ENABLED = os.environ.get('CYBERACCESS_DEMO_ENABLED', 'false').lower() in ('true', '1', 'yes')
+CYBERACCESS_LEGACY_DEMO_ENABLED = os.environ.get('CYBERACCESS_LEGACY_DEMO_ENABLED', 'false').lower() in ('true', '1', 'yes')
+CYBERACCESS_CONSOLE_URL = os.environ.get('CYBERACCESS_CONSOLE_URL', 'http://127.0.0.1:5177')
+CYBERACCESS_NOTIFICATIONS_ENABLED = os.environ.get('CYBERACCESS_NOTIFICATIONS_ENABLED', 'true').lower() in ('true', '1', 'yes')
+CYBERACCESS_NOTIFICATION_COOLDOWN_SECONDS = max(1, int(os.environ.get('CYBERACCESS_NOTIFICATION_COOLDOWN_SECONDS', '60')))
+CYBERACCESS_LOG_ALLOWED = os.environ.get('CYBERACCESS_LOG_ALLOWED', 'false').lower() in ('true', '1', 'yes')
+
+# Safe decision metadata goes to server stdout. An optional rotating local file aids demos.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'cyberaccess_console': {'class': 'logging.StreamHandler'}},
+    'loggers': {'cyberaccess': {'handlers': ['cyberaccess_console'], 'level': 'INFO', 'propagate': False}},
+}
+_security_log_file = os.environ.get('CYBERACCESS_SECURITY_LOG_FILE', '')
+if _security_log_file:
+    Path(_security_log_file).parent.mkdir(parents=True, exist_ok=True)
+    LOGGING['handlers']['cyberaccess_file'] = {
+        'class': 'logging.handlers.RotatingFileHandler', 'filename': _security_log_file,
+        'maxBytes': 2 * 1024 * 1024, 'backupCount': 3, 'encoding': 'utf-8',
+    }
+    LOGGING['loggers']['cyberaccess']['handlers'].append('cyberaccess_file')
 
 # URL Safety Defense Configuration
 URL_SAFETY_ENABLED = os.environ.get('URL_SAFETY_ENABLED', 'true').lower() in ('true', '1', 'yes')

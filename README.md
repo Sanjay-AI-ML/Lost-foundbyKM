@@ -2,6 +2,17 @@
 
 A modern, responsive full-stack Django web application designed to connect people who lost items with those who found them. Features automated notifications, item claim verification workflows, rich image uploads, advanced search, and user profile management.
 
+## CyberAccess integration
+
+The Django server now connects to CyberAccess using one tenant API key in `.env`.
+The key stays on the server; no CyberAccess JWT or admin credential is needed.
+Copy `.env.example`, set your key and backend URL, then restart Django.
+Protected claim reads and item mutations enforce CyberAccess's allow/deny/block decisions.
+
+For the local interactive test, enable `CYBERACCESS_DEMO_ENABLED=true`, run
+`python manage.py seed_cyberaccess_demo`, and open `/cyberaccess/demo/`.
+The demo is restricted to loopback development access and uses synthetic users and claims.
+
 ---
 
 ## 🌟 Key Features
@@ -86,6 +97,12 @@ Visit `http://127.0.0.1:8000/` in your browser.
 ---
 
 ## 🧪 Running Tests
+
+CyberAccess API-key integration also drives the portal's notification bell, denied-request
+warnings, and a server-verified quarantine page with a countdown. Denied and blocked
+decisions appear in the Django server log; the API key remains server-only. Configure
+notification grouping and optional file logging using `.env.example`.
+
 ```bash
 python manage.py test
 ```
